@@ -1,0 +1,2544 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EDIMAGE WORLD</title>
+
+  <style>
+    :root {
+      --bg: #040002;
+      --panel: rgba(5, 1, 2, 0.72);
+      --panel-strong: rgba(5, 1, 2, 0.9);
+      --text: #ffe7ad;
+      --text-soft: rgba(255, 231, 173, 0.72);
+      --text-faint: rgba(255, 231, 173, 0.42);
+      --accent: #ffb328;
+      --accent-hot: #ffdc5c;
+      --accent-dark: #170905;
+      --line: rgba(255, 198, 82, 0.24);
+      --line-strong: rgba(255, 198, 82, 0.48);
+      --cyan: #25c5d8;
+      --danger: #e94f74;
+      --shadow: 0 0 22px rgba(255, 180, 46, 0.32), 0 0 70px rgba(255, 123, 18, 0.2);
+      --serif: "Iowan Old Style", "Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif;
+      --mono: "Menlo", "Monaco", "Courier New", monospace;
+      --ease: cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    body[data-theme="amber"] {
+      --bg: #040002;
+      --panel: rgba(5, 1, 2, 0.72);
+      --panel-strong: rgba(5, 1, 2, 0.9);
+      --text: #ffe7ad;
+      --text-soft: rgba(255, 231, 173, 0.72);
+      --text-faint: rgba(255, 231, 173, 0.42);
+      --accent: #ffb328;
+      --accent-hot: #ffdc5c;
+      --accent-dark: #170905;
+      --line: rgba(255, 198, 82, 0.24);
+      --line-strong: rgba(255, 198, 82, 0.48);
+      --cyan: #25c5d8;
+      --shadow: 0 0 22px rgba(255, 180, 46, 0.32), 0 0 70px rgba(255, 123, 18, 0.2);
+      --serif: "Iowan Old Style", "Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif;
+    }
+
+    body[data-theme="mist"] {
+      --bg: #07130d;
+      --panel: rgba(12, 31, 23, 0.62);
+      --panel-strong: rgba(8, 22, 16, 0.92);
+      --text: #e8f1d4;
+      --text-soft: rgba(232, 241, 212, 0.74);
+      --text-faint: rgba(232, 241, 212, 0.42);
+      --accent: #d4e8a3;
+      --accent-hot: #f1ffd0;
+      --accent-dark: #102015;
+      --line: rgba(221, 239, 181, 0.25);
+      --line-strong: rgba(221, 239, 181, 0.54);
+      --cyan: #a5d4be;
+      --shadow: 0 0 35px rgba(193, 224, 170, 0.22), 0 0 90px rgba(45, 97, 65, 0.38);
+      --serif: Georgia, "Songti SC", serif;
+    }
+
+    body[data-theme="archive"] {
+      --bg: #dededb;
+      --panel: rgba(255, 255, 255, 0.72);
+      --panel-strong: rgba(246, 246, 243, 0.94);
+      --text: #1d1d1d;
+      --text-soft: rgba(29, 29, 29, 0.68);
+      --text-faint: rgba(29, 29, 29, 0.38);
+      --accent: #345bc7;
+      --accent-hot: #111111;
+      --accent-dark: #ffffff;
+      --line: rgba(0, 0, 0, 0.22);
+      --line-strong: rgba(0, 0, 0, 0.45);
+      --cyan: #345bc7;
+      --shadow: 0 18px 80px rgba(0, 0, 0, 0.13);
+      --serif: Didot, "Bodoni 72", Georgia, "Songti SC", serif;
+    }
+
+    body[data-theme="blueapple"] {
+      --bg: #0087f7;
+      --panel: rgba(255, 255, 255, 0.17);
+      --panel-strong: rgba(255, 255, 255, 0.23);
+      --text: #ffffff;
+      --text-soft: rgba(255, 255, 255, 0.78);
+      --text-faint: rgba(255, 255, 255, 0.46);
+      --accent: #0714d8;
+      --accent-hot: #ffffff;
+      --accent-dark: #ffffff;
+      --line: rgba(255, 255, 255, 0.38);
+      --line-strong: rgba(255, 255, 255, 0.7);
+      --cyan: #d6efff;
+      --shadow: 0 20px 90px rgba(0, 48, 180, 0.25);
+      --serif: Georgia, "Courier New", serif;
+    }
+
+    body[data-theme="redcanyon"] {
+      --bg: #3b0802;
+      --panel: rgba(42, 7, 2, 0.64);
+      --panel-strong: rgba(33, 4, 1, 0.92);
+      --text: #fff1d4;
+      --text-soft: rgba(255, 241, 212, 0.76);
+      --text-faint: rgba(255, 230, 190, 0.42);
+      --accent: #d7aa62;
+      --accent-hot: #ffe1a0;
+      --accent-dark: #2a0702;
+      --line: rgba(255, 218, 153, 0.28);
+      --line-strong: rgba(255, 218, 153, 0.56);
+      --cyan: #c3dfdf;
+      --shadow: 0 20px 76px rgba(103, 18, 7, 0.44);
+      --serif: "Iowan Old Style", "Songti SC", Georgia, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--serif);
+      background: var(--bg);
+      overflow-x: hidden;
+      transition: background 520ms ease, color 520ms ease;
+    }
+
+    body[data-theme="amber"] {
+      background:
+        radial-gradient(circle at 52% 32%, rgba(255, 186, 44, 0.13), transparent 22rem),
+        radial-gradient(circle at 26% 72%, rgba(32, 181, 204, 0.1), transparent 18rem),
+        linear-gradient(180deg, #050003 0%, #090202 48%, #020001 100%);
+    }
+
+    body[data-theme="mist"] {
+      background:
+        linear-gradient(rgba(11, 46, 29, 0.08), rgba(2, 20, 13, 0.34)),
+        url("pic/skin-mist.jpeg") center / cover,
+        linear-gradient(180deg, #5f8066 0%, #1b3d2c 48%, #07130d 100%);
+    }
+
+    body[data-theme="archive"] {
+      background:
+        linear-gradient(rgba(245, 245, 241, 0.62), rgba(218, 218, 214, 0.72)),
+        url("pic/skin-archive.jpeg") center top / min(58vw, 720px) auto no-repeat,
+        linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(180deg, #f0f0ee 0%, #d4d4d0 100%);
+    }
+
+    body[data-theme="blueapple"] {
+      background:
+        linear-gradient(rgba(0, 129, 238, 0.45), rgba(0, 117, 233, 0.68)),
+        url("pic/skin-blueapple.jpeg") center 18vh / min(56vw, 620px) auto no-repeat,
+        radial-gradient(circle at 50% 35%, rgba(255,255,255,0.16), transparent 18rem),
+        linear-gradient(180deg, #1aa4ff 0%, #0075e9 100%);
+    }
+
+    body[data-theme="redcanyon"] {
+      background:
+        linear-gradient(rgba(54, 5, 0, 0.1), rgba(54, 5, 0, 0.38)),
+        url("pic/skin-redcanyon.jpeg") center / cover,
+        #3b0802;
+    }
+
+    body::before,
+    body::after {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      z-index: 20;
+    }
+
+    body::before {
+      opacity: 0.32;
+      mix-blend-mode: screen;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 50%, transparent 50%),
+        radial-gradient(circle, rgba(255, 255, 255, 0.16) 1px, transparent 1.2px);
+      background-size: 100% 4px, 10px 10px;
+    }
+
+    body[data-theme="archive"]::before {
+      opacity: 0.16;
+      mix-blend-mode: multiply;
+      background-image:
+        linear-gradient(rgba(0, 0, 0, 0.06) 50%, transparent 50%),
+        radial-gradient(circle, rgba(0, 0, 0, 0.14) 1px, transparent 1.3px);
+    }
+
+    body[data-theme="redcanyon"]::before {
+      opacity: 0.28;
+      mix-blend-mode: multiply;
+      background-image:
+        linear-gradient(90deg, rgba(60, 7, 0, 0.18) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 236, 184, 0.1) 1px, transparent 1.3px);
+      background-size: 18px 100%, 11px 11px;
+    }
+
+    body::after {
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.02), transparent 18%, transparent 82%, rgba(255,255,255,0.018)),
+        radial-gradient(ellipse at center, transparent 46%, rgba(0,0,0,0.32) 100%);
+    }
+
+    button,
+    textarea,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      position: relative;
+      min-height: 100vh;
+      isolation: isolate;
+    }
+
+    .vhs-frame {
+      position: fixed;
+      inset: 18px;
+      border: 1px solid var(--line);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .status-line {
+      position: fixed;
+      left: clamp(18px, 4vw, 58px);
+      right: clamp(18px, 4vw, 58px);
+      top: clamp(14px, 3vw, 34px);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--text-soft);
+      font-family: var(--mono);
+      font-size: clamp(0.62rem, 1vw, 0.78rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      z-index: 6;
+    }
+
+    .knowledge-btn {
+      border: 1px solid var(--line);
+      color: var(--text-soft);
+      background: rgba(0, 0, 0, 0.14);
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    body[data-theme="archive"] .knowledge-btn {
+      background: rgba(255,255,255,0.45);
+    }
+
+    .timestamp {
+      position: fixed;
+      left: clamp(20px, 7vw, 116px);
+      bottom: clamp(20px, 5vw, 58px);
+      z-index: 6;
+      color: var(--text-soft);
+      font-family: var(--mono);
+      font-size: clamp(0.82rem, 2vw, 1.35rem);
+      letter-spacing: 0.18em;
+      text-shadow: 0 0 18px currentColor;
+    }
+
+    .world-relic {
+      position: fixed;
+      top: clamp(90px, 12vh, 130px);
+      left: 50%;
+      width: min(54vw, 720px);
+      aspect-ratio: 1.5 / 1;
+      transform: translateX(-50%);
+      pointer-events: none;
+      opacity: 0.55;
+      z-index: -1;
+      animation: relicDrift 9s var(--ease) infinite alternate;
+    }
+
+    .relic-shell {
+      position: absolute;
+      inset: 1% 0 3%;
+      border-radius: 48% 52% 44% 56% / 52% 44% 58% 46%;
+      background:
+        radial-gradient(ellipse at 52% 54%, rgba(0, 0, 0, 0.62) 0 28%, transparent 29%),
+        radial-gradient(ellipse at 49% 51%, var(--accent-hot) 0 24%, var(--accent) 42%, rgba(0,0,0,0.3) 61%, transparent 62%),
+        radial-gradient(ellipse at center, var(--accent), rgba(0,0,0,0.2) 72%, transparent 76%);
+      box-shadow: var(--shadow);
+      clip-path: polygon(4% 46%, 13% 25%, 34% 12%, 58% 8%, 82% 19%, 98% 41%, 92% 70%, 70% 91%, 39% 92%, 13% 78%);
+    }
+
+    body[data-theme="archive"] .world-relic {
+      opacity: 0.22;
+      filter: grayscale(1);
+    }
+
+    body[data-theme="blueapple"] .world-relic {
+      opacity: 0.38;
+      filter: hue-rotate(170deg) saturate(1.8);
+    }
+
+    body[data-theme="mist"] .world-relic {
+      opacity: 0.42;
+      filter: blur(1px) saturate(0.8);
+    }
+
+    body[data-theme="redcanyon"] .world-relic {
+      opacity: 0.18;
+      filter: sepia(1) hue-rotate(330deg) saturate(1.4);
+    }
+
+    .screen {
+      display: none;
+      min-height: 100vh;
+      padding: clamp(86px, 12vh, 132px) clamp(18px, 5vw, 78px) clamp(96px, 14vh, 150px);
+    }
+
+    .screen.active {
+      display: grid;
+      animation: screenIn 700ms var(--ease) both;
+    }
+
+    .home {
+      place-items: center;
+    }
+
+    .home-shell {
+      width: min(940px, 100%);
+      margin-top: clamp(74px, 14vh, 150px);
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--text-soft);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      text-wrap: balance;
+      font-size: clamp(2.8rem, 8vw, 7.8rem);
+      font-weight: 500;
+      line-height: 0.92;
+      text-shadow: 0 0 22px color-mix(in srgb, var(--accent) 58%, transparent);
+    }
+
+    .threshold {
+      margin: clamp(18px, 3vw, 28px) auto 0;
+      max-width: 760px;
+      color: var(--text-soft);
+      font-size: clamp(0.95rem, 1.65vw, 1.15rem);
+      line-height: 1.9;
+    }
+
+    .oracle-box {
+      position: relative;
+      width: min(720px, 100%);
+      margin: clamp(28px, 4vw, 44px) auto 0;
+      padding: 1px;
+      background: linear-gradient(115deg, var(--accent), var(--cyan), rgba(255,255,255,0.18));
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .oracle-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+      padding: 14px;
+      border-radius: 11px;
+      background: var(--panel-strong);
+      backdrop-filter: blur(16px);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 104px;
+      resize: vertical;
+      color: var(--text);
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      line-height: 1.75;
+    }
+
+    textarea::placeholder,
+    input::placeholder {
+      color: var(--text-faint);
+    }
+
+    .theme-selector {
+      width: min(900px, 100%);
+      margin: 30px auto 0;
+      text-align: left;
+    }
+
+    .theme-title-row {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .theme-title-row h2 {
+      margin: 0;
+      font-size: clamp(1.25rem, 3vw, 2rem);
+      font-weight: 500;
+    }
+
+    .theme-title-row p {
+      margin: 0;
+      color: var(--text-soft);
+      font-size: 0.92rem;
+    }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+    }
+
+    .theme-card {
+      min-height: 190px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      color: var(--text);
+      background: var(--panel);
+      text-align: left;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+
+    .theme-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .theme-card.active {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-preview {
+      display: block;
+      height: 105px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .amber-preview {
+      background:
+        radial-gradient(ellipse at 50% 46%, #ffe273 0 19%, #ffb22a 35%, #45200a 54%, transparent 56%),
+        radial-gradient(circle at 50% 54%, #22b9d0 0 15%, transparent 16%),
+        radial-gradient(circle at 62% 58%, #5bc853 0 13%, transparent 14%),
+        #050002;
+      background-size: cover;
+      filter: saturate(1.15);
+    }
+
+    .mist-preview {
+      background:
+        url("pic/skin-mist.jpeg") center / cover,
+        radial-gradient(circle at 24% 18%, #c1d6b4, transparent 38%),
+        radial-gradient(circle at 72% 70%, #183c2a, transparent 42%),
+        linear-gradient(180deg, #88a983, #163522);
+      filter: blur(0.2px);
+    }
+
+    .archive-preview {
+      position: relative;
+      background:
+        linear-gradient(rgba(255,255,255,.62), rgba(255,255,255,.62)),
+        url("pic/skin-archive.jpeg") center / cover,
+        linear-gradient(180deg, #efefef, #cfcfcf);
+      overflow: hidden;
+    }
+
+    .archive-preview::before {
+      content: "AFIH2026";
+      position: absolute;
+      top: 30px;
+      left: 16px;
+      color: #111;
+      font-family: Didot, Georgia, serif;
+      font-size: 27px;
+    }
+
+    .archive-preview::after {
+      content: "001101";
+      position: absolute;
+      right: 15px;
+      bottom: 18px;
+      color: #345bc7;
+      font-family: var(--mono);
+      font-size: 18px;
+    }
+
+    .blueapple-preview {
+      background:
+        url("pic/skin-blueapple.jpeg") center / cover,
+        radial-gradient(circle at 48% 50%, rgba(255,255,255,.95) 0 20%, transparent 21%),
+        radial-gradient(circle at 60% 54%, rgba(8,24,210,.45), transparent 12%),
+        linear-gradient(180deg, #20a4ff, #0075e9);
+    }
+
+    .redcanyon-preview {
+      background:
+        linear-gradient(rgba(65, 6, 0, 0.08), rgba(65, 6, 0, 0.32)),
+        url("pic/skin-redcanyon.jpeg") center / cover,
+        #8f1d0e;
+    }
+
+    .theme-card strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 1rem;
+    }
+
+    .theme-card small {
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+
+    .primary-btn,
+    .ghost-btn,
+    .choice-btn,
+    .small-btn {
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+
+    .primary-btn {
+      min-width: 118px;
+      min-height: 52px;
+      padding: 0 18px;
+      border-radius: 10px;
+      color: var(--accent-dark);
+      background: linear-gradient(180deg, var(--accent-hot), var(--accent));
+      box-shadow: var(--shadow);
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    body[data-theme="archive"] .primary-btn {
+      color: #ffffff;
+      background: #111111;
+    }
+
+    body[data-theme="blueapple"] .primary-btn {
+      color: white;
+      background: #0714d8;
+    }
+
+    body[data-theme="redcanyon"] .primary-btn {
+      color: #2a0702;
+      background: linear-gradient(180deg, #ffe1a0, #d7aa62);
+    }
+
+    .primary-btn:disabled,
+    .small-btn:disabled {
+      cursor: default;
+      opacity: 0.42;
+      filter: saturate(0.4);
+    }
+
+    .primary-btn:not(:disabled):hover,
+    .ghost-btn:hover,
+    .choice-btn:hover,
+    .small-btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .ghost-btn,
+    .small-btn {
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    body[data-theme="archive"] .ghost-btn,
+    body[data-theme="archive"] .small-btn {
+      background: rgba(255,255,255,0.52);
+    }
+
+    .stage {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      align-self: center;
+    }
+
+    .stage-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: clamp(24px, 4vw, 42px);
+    }
+
+    .stage-title {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 4.6rem);
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .stage-note {
+      max-width: 520px;
+      margin: 12px 0 0;
+      color: var(--text-soft);
+      line-height: 1.9;
+    }
+
+    .thought-strip,
+    .length-input,
+    .length-output,
+    .story-panel,
+    .result-panel,
+    .meter,
+    .path-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      box-shadow: inset 0 0 50px rgba(255,255,255,0.035);
+    }
+
+    .thought-strip {
+      margin-bottom: 22px;
+      padding: 16px 18px;
+      color: var(--text-soft);
+    }
+
+    .thought-strip span,
+    .field-label,
+    .meter-label,
+    .path-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-soft);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      min-height: 270px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      transform: translateY(16px) rotateX(18deg);
+      opacity: 0;
+      transform-origin: center bottom;
+      backdrop-filter: blur(14px);
+    }
+
+    .card.revealed {
+      animation: cardReveal 850ms var(--ease) both;
+    }
+
+    .card:nth-child(2).revealed {
+      animation-delay: 120ms;
+    }
+
+    .card:nth-child(3).revealed {
+      animation-delay: 240ms;
+    }
+
+    .card:nth-child(4).revealed {
+      animation-delay: 360ms;
+    }
+
+    .card-kicker {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--text-soft);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .card-value {
+      margin: 34px 0 16px;
+      min-height: 74px;
+      color: var(--accent-hot);
+      font-size: clamp(1.22rem, 2.4vw, 1.62rem);
+      line-height: 1.3;
+    }
+
+    .card-copy {
+      margin: 0;
+      color: var(--text-soft);
+      font-size: 0.92rem;
+      line-height: 1.8;
+    }
+
+    .card-options {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .card-option {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--text-soft);
+      background: rgba(255,255,255,0.04);
+      text-align: left;
+      line-height: 1.45;
+    }
+
+    .card-option.selected {
+      color: var(--accent-dark);
+      border-color: var(--accent);
+      background: linear-gradient(180deg, var(--accent-hot), var(--accent));
+    }
+
+    body[data-theme="archive"] .card-option.selected,
+    body[data-theme="blueapple"] .card-option.selected {
+      color: white;
+      background: var(--accent);
+    }
+
+    .card-custom {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    input {
+      width: 100%;
+      height: 50px;
+      padding: 0 14px;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      outline: none;
+      background: rgba(255,255,255,0.06);
+    }
+
+    body[data-theme="archive"] input {
+      background: rgba(255,255,255,0.62);
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--line-strong);
+    }
+
+    .card-custom input {
+      height: 38px;
+      font-size: 0.86rem;
+    }
+
+    .length-panel {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+      align-items: stretch;
+      margin-top: 16px;
+    }
+
+    .length-input {
+      padding: 18px;
+    }
+
+    .length-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .length-output {
+      display: grid;
+      align-content: center;
+      padding: 18px;
+    }
+
+    .level {
+      margin: 0 0 8px;
+      color: var(--accent-hot);
+      font-size: clamp(1.35rem, 3vw, 2.2rem);
+    }
+
+    .level-copy {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.8;
+    }
+
+    .story-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 18px;
+    }
+
+    .story-panel {
+      min-height: 560px;
+      padding: clamp(22px, 4vw, 46px);
+    }
+
+    .chapter-mark {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+      color: var(--text-soft);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .story-text {
+      color: var(--text);
+      font-size: clamp(1.03rem, 1.8vw, 1.2rem);
+      line-height: 2.05;
+    }
+
+    .story-text p {
+      margin: 0 0 1.35em;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .choice-btn {
+      width: 100%;
+      min-height: 58px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      color: var(--text);
+      text-align: left;
+      line-height: 1.6;
+      background: rgba(255,255,255,0.055);
+    }
+
+    .choice-btn small {
+      display: block;
+      margin-top: 6px;
+      color: var(--text-soft);
+      font-size: 0.82rem;
+    }
+
+    .custom-path {
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid color-mix(in srgb, var(--cyan) 52%, transparent);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .custom-path p {
+      margin: 0 0 10px;
+      color: var(--text-soft);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    .custom-path textarea {
+      min-height: 82px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .custom-path-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .side-panel {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .meter,
+    .path-card {
+      padding: 16px;
+    }
+
+    .meter-value {
+      margin: 0 0 12px;
+      color: var(--accent-hot);
+      font-size: 1.45rem;
+    }
+
+    .path-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: var(--text-soft);
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .toast {
+      min-height: 20px;
+      margin-top: 14px;
+      color: var(--text-soft);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 280ms var(--ease), transform 280ms var(--ease);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .result-panel {
+      width: min(860px, 100%);
+      margin: 0 auto;
+      padding: clamp(24px, 5vw, 58px);
+    }
+
+    .result-title {
+      margin: 0 0 12px;
+      color: var(--accent-hot);
+      font-size: clamp(2rem, 5vw, 4.8rem);
+      font-weight: 500;
+      line-height: 1.05;
+    }
+
+    .result-lede {
+      margin: 0 0 32px;
+      color: var(--text-soft);
+      line-height: 1.9;
+    }
+
+    .final-body {
+      color: var(--text);
+      font-size: clamp(1rem, 1.7vw, 1.16rem);
+      line-height: 2.05;
+    }
+
+    .path-summary {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--text-soft);
+      font-size: 0.92rem;
+      line-height: 1.8;
+    }
+
+    .result-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: rgba(2, 0, 1, 0.62);
+      backdrop-filter: blur(14px);
+      z-index: 30;
+    }
+
+    .modal-panel {
+      width: min(760px, 100%);
+      max-height: min(760px, 88vh);
+      overflow: auto;
+      padding: clamp(22px, 4vw, 40px);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .modal-title {
+      margin: 0;
+      color: var(--accent-hot);
+      font-size: clamp(1.6rem, 4vw, 3rem);
+      font-weight: 500;
+    }
+
+    .modal-copy {
+      margin: 8px 0 0;
+      color: var(--text-soft);
+      line-height: 1.8;
+    }
+
+    .access-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--text-soft);
+      background: rgba(255,255,255,0.04);
+      line-height: 1.7;
+      font-size: 0.92rem;
+    }
+
+    .access-error {
+      min-height: 22px;
+      margin-top: 10px;
+      color: var(--danger);
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .knowledge-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .knowledge-text {
+      min-height: 160px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .knowledge-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+      color: var(--text-soft);
+      font-size: 0.9rem;
+      line-height: 1.65;
+    }
+
+    .knowledge-item {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 920px) {
+      .world-relic {
+        width: min(92vw, 620px);
+        top: 78px;
+        opacity: 0.36;
+      }
+
+      .home-shell {
+        margin-top: clamp(120px, 20vh, 190px);
+      }
+
+      .cards,
+      .length-panel,
+      .story-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .theme-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        min-height: 210px;
+      }
+
+      .side-panel {
+        grid-row: 1;
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .vhs-frame {
+        inset: 10px;
+      }
+
+      .status-line {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .timestamp {
+        display: none;
+      }
+
+      .world-relic {
+        top: 92px;
+        width: 118vw;
+        opacity: 0.24;
+      }
+
+      h1 {
+        font-size: clamp(2.35rem, 10vw, 2.9rem);
+        line-height: 0.96;
+      }
+
+      h1 .brand-line span {
+        display: block;
+      }
+
+      .threshold {
+        max-width: 34ch;
+      }
+
+      .oracle-inner {
+        grid-template-columns: 1fr;
+      }
+
+      .primary-btn {
+        width: 100%;
+      }
+
+      .stage-header,
+      .theme-title-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .side-panel,
+      .knowledge-grid,
+      .card-custom {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @keyframes relicDrift {
+      from {
+        transform: translateX(-50%) translateY(0) rotate(-1deg);
+      }
+
+      to {
+        transform: translateX(-50%) translateY(10px) rotate(1deg);
+      }
+    }
+
+    @keyframes screenIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+        filter: blur(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes cardReveal {
+      from {
+        opacity: 0;
+        transform: translateY(20px) rotateX(35deg);
+        filter: blur(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) rotateX(0);
+        filter: blur(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body data-theme="amber">
+  <div class="app">
+    <div class="vhs-frame" aria-hidden="true"></div>
+
+    <div class="status-line">
+      <span>EDIMAGE WORLD / PATH 0001</span>
+      <button class="knowledge-btn" id="knowledgeOpenBtn" type="button">knowledge base</button>
+    </div>
+
+    <div class="timestamp" aria-hidden="true">2000.04.14&nbsp;&nbsp;14:10</div>
+
+    <div class="world-relic" aria-hidden="true">
+      <div class="relic-shell"></div>
+    </div>
+
+    <main>
+      <section class="screen home active" data-screen="home">
+        <div class="home-shell">
+          <p class="eyebrow">an entrance for unfinished dreams</p>
+
+          <h1>
+            <span>WELCOME</span><br />
+            <span class="brand-line"><span>EDIMAGE</span> <span>WORLD.</span></span>
+          </h1>
+
+          <p class="threshold">
+            站在小径分岔的路口，你可以去往一段梦、一枚场景，或一个尚未学会说话的世界。
+          </p>
+
+          <form class="oracle-box" id="ideaForm">
+            <div class="oracle-inner">
+              <textarea id="ideaInput" rows="4" placeholder="写下一枚会生长的念头。例如：一个失眠的人在梦里收到未来自己的来信。"></textarea>
+              <button class="primary-btn" id="startBtn" type="submit" disabled>进入</button>
+            </div>
+          </form>
+
+          <section class="theme-selector" id="themeSelector">
+            <div class="theme-title-row">
+              <div>
+                <p class="eyebrow">choose a skin</p>
+                <h2>选择进入世界的皮肤</h2>
+              </div>
+              <p>它只改变世界显影的方式，不改变你的念头本身。</p>
+            </div>
+
+            <div class="theme-grid">
+              <button class="theme-card" type="button" data-theme="amber">
+                <span class="theme-preview amber-preview"></span>
+                <strong>Amber VHS</strong>
+                <small>黑场、琥珀光、旧录像、小世界、发光网点。</small>
+              </button>
+
+              <button class="theme-card" type="button" data-theme="mist">
+                <span class="theme-preview mist-preview"></span>
+                <strong>Mist Forest</strong>
+                <small>雾林、低饱和、潮湿、梦境、记忆回声。</small>
+              </button>
+
+              <button class="theme-card" type="button" data-theme="archive">
+                <span class="theme-preview archive-preview"></span>
+                <strong>Archive Poster</strong>
+                <small>档案、海报、数字身体、伪文献、实验叙事。</small>
+              </button>
+
+              <button class="theme-card" type="button" data-theme="blueapple">
+                <span class="theme-preview blueapple-preview"></span>
+                <strong>Blue Apple</strong>
+                <small>亮蓝、拼贴、超现实、漂浮文字、明亮怪异。</small>
+              </button>
+
+              <button class="theme-card" type="button" data-theme="redcanyon">
+                <span class="theme-preview redcanyon-preview"></span>
+                <strong>Red Canyon</strong>
+                <small>赤壁、卷轴、峡谷、旧神话、窄门与远路。</small>
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="draw">
+        <div class="stage">
+          <div class="stage-header">
+            <div>
+              <p class="eyebrow">the cards are reading</p>
+              <h2 class="stage-title">念头正在显影。</h2>
+              <p class="stage-note">
+                它会先获得类型标签、体裁、类型和文风。你可以选择智能推荐卡片，也可以写入自定义方向。
+              </p>
+            </div>
+            <button class="ghost-btn" data-action="backHome" type="button">回到入口</button>
+          </div>
+
+          <div class="thought-strip">
+            <span>first thought</span>
+            <div id="thoughtEcho"></div>
+          </div>
+
+          <div class="cards" id="cardGrid"></div>
+
+          <div class="length-panel">
+            <div class="length-input">
+              <label class="field-label" for="lengthInput">volume</label>
+              <input id="lengthInput" type="text" placeholder="例如：很短 / 大概 1000 字 / 想玩久一点 / 长篇" />
+              <div class="length-actions">
+                <button class="small-btn" id="matchLengthBtn" type="button">匹配体量</button>
+                <button class="primary-btn" id="enterStoryBtn" type="button" disabled>进入小径</button>
+              </div>
+            </div>
+
+            <div class="length-output" id="lengthOutput">
+              <p class="level">L3 标准互动短篇</p>
+              <p class="level-copy">如果你没有指定体量，世界会默认给这枚念头 5 到 8 次分岔。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="story">
+        <div class="stage">
+          <div class="stage-header">
+            <div>
+              <p class="eyebrow">interactive fiction</p>
+              <h2 class="stage-title">小径已经打开。</h2>
+            </div>
+            <button class="ghost-btn" id="finishEarlyBtn" type="button">让故事浮出水面</button>
+          </div>
+
+          <div class="story-layout">
+            <article class="story-panel">
+              <div class="chapter-mark">
+                <span id="chapterMark">chapter 01</span>
+                <span id="styleMark">冷静诗性</span>
+              </div>
+
+              <div class="story-text" id="storyText"></div>
+              <div class="choices" id="choices"></div>
+
+              <div class="custom-path hidden" id="customPath">
+                <p id="customPrompt">这里出现了一条不能被预设选项完全接住的小路。</p>
+                <textarea id="customInput" rows="3" placeholder="写下你要做的事、要问的话，或你想让世界记住的句子。"></textarea>
+                <div class="custom-path-actions">
+                  <button class="primary-btn" id="customSubmitBtn" type="button">写入这条路</button>
+                </div>
+              </div>
+            </article>
+
+            <aside class="side-panel">
+              <div class="meter">
+                <p class="meter-label">look back</p>
+                <p class="meter-value" id="undoCount">回望 2</p>
+                <button class="small-btn" id="undoBtn" type="button">退回上一处岔路</button>
+                <div class="toast" id="undoToast"></div>
+              </div>
+
+              <div class="path-card">
+                <p class="path-label">path</p>
+                <ul class="path-list" id="pathList"></ul>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="result">
+        <div class="result-panel">
+          <p class="eyebrow">the path has surfaced</p>
+          <h2 class="result-title" id="resultTitle">便利店在梦里亮着</h2>
+          <p class="result-lede" id="resultLede">这条路径暂时抵达了它的尽头。</p>
+          <div class="final-body" id="finalBody"></div>
+          <div class="path-summary" id="pathSummary"></div>
+
+          <div class="result-actions">
+            <button class="primary-btn" id="copyBtn" type="button">复制全文</button>
+            <button class="ghost-btn" id="downloadBtn" type="button">下载 Markdown</button>
+            <button class="ghost-btn" data-action="restart" type="button">回到入口</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="modal hidden" id="knowledgeModal" aria-label="EDIMAGE WORLD 知识库">
+      <div class="modal-panel">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">world memory</p>
+            <h2 class="modal-title">知识库入口</h2>
+            <p class="modal-copy">
+              把小说片段、梦境碎片、地点设定或一句还没有归处的话存进世界。知识库会优先参与后续文本生成。
+            </p>
+          </div>
+          <button class="ghost-btn" id="knowledgeCloseBtn" type="button">关闭</button>
+        </div>
+
+        <div class="knowledge-grid">
+          <input id="knowledgeTitle" type="text" placeholder="标题，例如：夜间便利店" />
+          <input id="knowledgeTags" type="text" placeholder="标签，例如：梦境 / 货架 / 私语" />
+        </div>
+
+        <textarea class="knowledge-text" id="knowledgeText" rows="6" placeholder="粘贴一段创意文本。它会成为世界后续生成时优先参考的材料。"></textarea>
+
+        <div class="result-actions">
+          <button class="primary-btn" id="knowledgeSaveBtn" type="button">存入世界</button>
+          <button class="ghost-btn" id="knowledgeClearBtn" type="button">清空本地条目</button>
+        </div>
+
+        <div class="knowledge-list" id="knowledgeList"></div>
+      </div>
+    </section>
+
+    <section class="modal hidden" id="accessModal" aria-label="EDIMAGE WORLD 体验码">
+      <div class="modal-panel">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">threshold code</p>
+            <h2 class="modal-title">输入体验码</h2>
+            <p class="modal-copy">
+              这条小径目前只向受邀体验者开放。体验码会在完成一篇完整互动文本后消耗 1 次。
+            </p>
+          </div>
+          <button class="ghost-btn" id="accessCancelBtn" type="button">返回</button>
+        </div>
+
+        <input id="accessCodeInput" type="password" placeholder="输入体验码或开发者密码" autocomplete="off" />
+        <div class="access-error" id="accessError"></div>
+        <div class="result-actions">
+          <button class="primary-btn" id="accessSubmitBtn" type="button">进入显影</button>
+        </div>
+        <div class="access-note" id="accessNote">
+          体验码剩余次数会由本地后端记录。开发者密码不消耗次数。
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      idea: "",
+      theme: localStorage.getItem("edimage-theme") || "amber",
+      cards: null,
+      cardOptions: null,
+      level: {
+        id: "L3",
+        name: "标准互动短篇",
+        rounds: "5 到 8 次分岔",
+        copy: "如果你没有指定体量，世界会默认给这枚念头 5 到 8 次分岔。"
+      },
+      undoRemaining: 2,
+      turn: 0,
+      paragraphs: [],
+      choices: [],
+      path: [],
+      history: [],
+      customInput: null,
+      finalStory: null,
+      pendingIdea: "",
+      access: JSON.parse(localStorage.getItem("edimage-access") || "null")
+    };
+
+    const screens = [...document.querySelectorAll(".screen")];
+    const themeButtons = [...document.querySelectorAll(".theme-card")];
+
+    const ideaInput = document.querySelector("#ideaInput");
+    const startBtn = document.querySelector("#startBtn");
+    const ideaForm = document.querySelector("#ideaForm");
+    const cardGrid = document.querySelector("#cardGrid");
+    const thoughtEcho = document.querySelector("#thoughtEcho");
+    const lengthInput = document.querySelector("#lengthInput");
+    const matchLengthBtn = document.querySelector("#matchLengthBtn");
+    const lengthOutput = document.querySelector("#lengthOutput");
+    const enterStoryBtn = document.querySelector("#enterStoryBtn");
+    const storyText = document.querySelector("#storyText");
+    const choicesEl = document.querySelector("#choices");
+    const customPath = document.querySelector("#customPath");
+    const customPrompt = document.querySelector("#customPrompt");
+    const customInput = document.querySelector("#customInput");
+    const customSubmitBtn = document.querySelector("#customSubmitBtn");
+    const undoBtn = document.querySelector("#undoBtn");
+    const undoCount = document.querySelector("#undoCount");
+    const undoToast = document.querySelector("#undoToast");
+    const pathList = document.querySelector("#pathList");
+    const chapterMark = document.querySelector("#chapterMark");
+    const styleMark = document.querySelector("#styleMark");
+    const finishEarlyBtn = document.querySelector("#finishEarlyBtn");
+    const resultTitle = document.querySelector("#resultTitle");
+    const resultLede = document.querySelector("#resultLede");
+    const finalBody = document.querySelector("#finalBody");
+    const pathSummary = document.querySelector("#pathSummary");
+    const copyBtn = document.querySelector("#copyBtn");
+    const downloadBtn = document.querySelector("#downloadBtn");
+    const knowledgeOpenBtn = document.querySelector("#knowledgeOpenBtn");
+    const knowledgeModal = document.querySelector("#knowledgeModal");
+    const knowledgeCloseBtn = document.querySelector("#knowledgeCloseBtn");
+    const knowledgeTitle = document.querySelector("#knowledgeTitle");
+    const knowledgeTags = document.querySelector("#knowledgeTags");
+    const knowledgeText = document.querySelector("#knowledgeText");
+    const knowledgeSaveBtn = document.querySelector("#knowledgeSaveBtn");
+    const knowledgeClearBtn = document.querySelector("#knowledgeClearBtn");
+    const knowledgeList = document.querySelector("#knowledgeList");
+    const accessModal = document.querySelector("#accessModal");
+    const accessCodeInput = document.querySelector("#accessCodeInput");
+    const accessSubmitBtn = document.querySelector("#accessSubmitBtn");
+    const accessCancelBtn = document.querySelector("#accessCancelBtn");
+    const accessError = document.querySelector("#accessError");
+    const accessNote = document.querySelector("#accessNote");
+
+    const fallbackDecks = {
+      tags: [
+        ["梦境残片", "失落场所", "记忆回声"],
+        ["温柔异变", "城市幽灵", "错位童年"],
+        ["潮湿档案", "平行房间", "被遗忘的门"],
+        ["静物叙事", "迷宫日常", "身份裂隙"],
+        ["夜间水域", "私人神话", "过曝现实"]
+      ],
+      forms: ["互动短篇", "梦境档案", "伪日记", "分岔叙事", "调查记录", "开放小说"],
+      genres: ["梦核", "都市异闻", "魔幻现实", "心理奇幻", "日常怪谈", "废墟浪漫"],
+      styles: ["冷静诗性", "潮湿梦呓", "低频悬疑", "影像化白描", "温柔怪诞", "像旧录像一样缓慢"]
+    };
+
+    const cardCopy = {
+      concept: "这些标签来自你的念头，会决定故事最先显影的意象和冲突。",
+      form: "体裁会决定这个世界以什么容器保存你的 idea。",
+      genre: "类型会决定现实偏移的方式、风险感和探索方向。",
+      style: "文风会决定叙事的呼吸、光线和语言颗粒。"
+    };
+
+    setTheme(state.theme);
+    renderLength();
+    renderKnowledgeList();
+
+    themeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setTheme(button.dataset.theme);
+      });
+    });
+
+    ideaInput.addEventListener("input", () => {
+      startBtn.disabled = ideaInput.value.trim().length < 2;
+    });
+
+    ideaForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const idea = ideaInput.value.trim();
+      if (!idea) return;
+
+      state.pendingIdea = idea;
+      if (!hasDeveloperAccess()) {
+        openAccessModal();
+        return;
+      }
+
+      await beginIdeaFlow(idea);
+    });
+
+    async function beginIdeaFlow(idea) {
+      if (!idea) return;
+
+      startBtn.disabled = true;
+      startBtn.textContent = "显影中";
+
+      state.idea = idea;
+      state.cards = await generateCards(idea);
+      thoughtEcho.textContent = idea;
+
+      renderCards();
+      showScreen("draw");
+
+      startBtn.textContent = "进入";
+      startBtn.disabled = false;
+    }
+
+    matchLengthBtn.addEventListener("click", () => {
+      state.level = matchLength(lengthInput.value);
+      renderLength();
+      enterStoryBtn.disabled = false;
+    });
+
+    enterStoryBtn.addEventListener("click", startStory);
+    finishEarlyBtn.addEventListener("click", renderResult);
+    customSubmitBtn.addEventListener("click", submitCustomPath);
+    undoBtn.addEventListener("click", undoTurn);
+    copyBtn.addEventListener("click", copyStory);
+    downloadBtn.addEventListener("click", downloadStory);
+    knowledgeOpenBtn.addEventListener("click", openKnowledgeModal);
+    knowledgeCloseBtn.addEventListener("click", closeKnowledgeModal);
+    knowledgeSaveBtn.addEventListener("click", saveKnowledgeEntry);
+    knowledgeClearBtn.addEventListener("click", clearKnowledgeEntries);
+    accessSubmitBtn.addEventListener("click", validateAccessAndContinue);
+    accessCancelBtn.addEventListener("click", closeAccessModal);
+    accessCodeInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") validateAccessAndContinue();
+      if (event.key === "Escape") closeAccessModal();
+    });
+
+    knowledgeModal.addEventListener("click", (event) => {
+      if (event.target === knowledgeModal) closeKnowledgeModal();
+    });
+
+    document.querySelectorAll("[data-action='backHome'], [data-action='restart']").forEach((button) => {
+      button.addEventListener("click", resetToHome);
+    });
+
+    function setTheme(theme) {
+      state.theme = theme || "amber";
+      document.body.dataset.theme = state.theme;
+      localStorage.setItem("edimage-theme", state.theme);
+
+      themeButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.theme === state.theme);
+      });
+    }
+
+    function hasDeveloperAccess() {
+      return state.access?.mode === "developer";
+    }
+
+    function openAccessModal() {
+      accessError.textContent = "";
+      accessCodeInput.value = "";
+      accessNote.textContent = "体验码会在完成一篇完整互动文本后消耗 1 次。开发者密码不消耗次数。";
+      accessModal.classList.remove("hidden");
+      window.setTimeout(() => accessCodeInput.focus(), 60);
+    }
+
+    function closeAccessModal() {
+      accessModal.classList.add("hidden");
+      state.pendingIdea = "";
+      startBtn.disabled = ideaInput.value.trim().length < 2;
+      startBtn.textContent = "进入";
+    }
+
+    async function validateAccessAndContinue() {
+      const code = accessCodeInput.value.trim();
+      if (!code) {
+        accessError.textContent = "请输入体验码。";
+        return;
+      }
+
+      accessSubmitBtn.disabled = true;
+      accessSubmitBtn.textContent = "验证中";
+      accessError.textContent = "";
+
+      try {
+        const response = await fetch("/api/access/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          accessError.textContent = result.error || "体验码不可用。";
+          accessNote.textContent = typeof result.remaining === "number"
+            ? `体验名额剩余 ${result.remaining} 次。`
+            : "请确认体验码是否正确，或联系网站所有者。";
+          return;
+        }
+
+        state.access = {
+          mode: result.mode,
+          remaining: result.remaining,
+          sessionId: result.sessionId || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          completed: false
+        };
+        localStorage.setItem("edimage-access", JSON.stringify(state.access));
+        accessModal.classList.add("hidden");
+        await beginIdeaFlow(state.pendingIdea || ideaInput.value.trim());
+      } catch (error) {
+        accessError.textContent = "本地后端没有回应，请确认 server.mjs 正在运行。";
+      } finally {
+        accessSubmitBtn.disabled = false;
+        accessSubmitBtn.textContent = "进入显影";
+      }
+    }
+
+    function showScreen(name) {
+      screens.forEach((screen) => {
+        screen.classList.toggle("active", screen.dataset.screen === name);
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function apiGenerate(stage, payload) {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage, payload })
+      });
+
+      if (!response.ok) {
+        throw new Error("api generate failed");
+      }
+
+      return response.json();
+    }
+
+    async function generateCards(idea) {
+      try {
+        const cards = await apiGenerate("cards", {
+          idea,
+          theme: state.theme,
+          knowledgeBase: getKnowledgeContext(),
+          requirement: "所有推荐卡片必须根据用户 idea 智能生成，禁止通用模板。"
+        });
+
+        return normalizeCardResponse(cards, idea);
+      } catch (error) {
+        const fallback = drawCards(idea);
+        state.cardOptions = makeFallbackCardOptions(fallback);
+        return fallback;
+      }
+    }
+
+    function normalizeCardResponse(cards, idea) {
+      const fallback = drawCards(idea);
+
+      const conceptCandidates = normalizeConceptCandidates(
+        cards.cards?.concept ||
+        cards.candidates?.conceptTags ||
+        cards.conceptCandidates ||
+        [cards.conceptTags || cards.concept || fallback.concept]
+      );
+
+      const formCandidates = normalizeStringCandidates(
+        cards.cards?.form ||
+        cards.candidates?.form ||
+        cards.formCandidates ||
+        [cards.form || fallback.form]
+      );
+
+      const genreCandidates = normalizeStringCandidates(
+        cards.cards?.genre ||
+        cards.candidates?.genre ||
+        cards.genreCandidates ||
+        [cards.genre || fallback.genre]
+      );
+
+      const styleCandidates = normalizeStringCandidates(
+        cards.cards?.style ||
+        cards.candidates?.style ||
+        cards.styleCandidates ||
+        [cards.style || fallback.style]
+      );
+
+      state.cardOptions = {
+        concept: conceptCandidates,
+        form: formCandidates,
+        genre: genreCandidates,
+        style: styleCandidates
+      };
+
+      return {
+        concept: conceptCandidates[0] || fallback.concept,
+        form: formCandidates[0] || fallback.form,
+        genre: genreCandidates[0] || fallback.genre,
+        style: styleCandidates[0] || fallback.style,
+        explanations: cards.explanations || {
+          conceptTags: cards.analysis || cardCopy.concept,
+          form: cardCopy.form,
+          genre: cardCopy.genre,
+          style: cardCopy.style
+        }
+      };
+    }
+
+    function normalizeConceptCandidates(candidates) {
+      return ensureArray(candidates)
+        .map((candidate) => {
+          if (Array.isArray(candidate)) return candidate;
+          if (typeof candidate === "object" && candidate?.title) return [candidate.title];
+          return String(candidate).split(/[、,/，|]/);
+        })
+        .map((candidate) => candidate.map((item) => String(item).trim()).filter(Boolean).slice(0, 4))
+        .filter((candidate) => candidate.length)
+        .slice(0, 5);
+    }
+
+    function normalizeStringCandidates(candidates) {
+      return ensureArray(candidates)
+        .map((candidate) => {
+          if (typeof candidate === "object") {
+            return candidate.title || candidate.value || candidate.label || JSON.stringify(candidate);
+          }
+          return String(candidate);
+        })
+        .map((candidate) => candidate.trim())
+        .filter(Boolean)
+        .slice(0, 5);
+    }
+
+    function ensureArray(value) {
+      if (Array.isArray(value)) return value;
+      if (value === undefined || value === null) return [];
+      return [value];
+    }
+
+    function makeFallbackCardOptions(fallback) {
+      return {
+        concept: [
+          fallback.concept,
+          ["未命名地点", fallback.concept[1] || "隐秘回声", "异常物件"],
+          ["私人梦路", "轻微偏移", "回声场景"]
+        ],
+        form: [fallback.form, "梦境档案", "分岔叙事"],
+        genre: [fallback.genre, "梦核", "日常怪谈"],
+        style: [fallback.style, "低频悬疑", "温柔怪诞"]
+      };
+    }
+
+    function seedFrom(text) {
+      return [...text].reduce((sum, char, index) => sum + char.charCodeAt(0) * (index + 3), 17);
+    }
+
+    function pick(list, seed, offset = 0) {
+      return list[(seed + offset) % list.length];
+    }
+
+    function drawCards(idea) {
+      const seed = seedFrom(idea);
+      let tagSet = pick(fallbackDecks.tags, seed);
+
+      if (/梦|睡|醒|夜|房间/.test(idea)) {
+        tagSet = ["梦境残片", "平行房间", "记忆回声"];
+      }
+
+      if (/便利店|街|城市|路|站|电梯/.test(idea)) {
+        tagSet = ["失落场所", "城市幽灵", "温柔异变"];
+      }
+
+      if (/水|河|雨|海|湖|潮/.test(idea)) {
+        tagSet = ["夜间水域", "潮湿档案", "被遗忘的门"];
+      }
+
+      return {
+        concept: tagSet,
+        form: pick(fallbackDecks.forms, seed, 2),
+        genre: /梦|醒|睡/.test(idea) ? "梦核" : pick(fallbackDecks.genres, seed, 4),
+        style: pick(fallbackDecks.styles, seed, 6),
+        explanations: null
+      };
+    }
+
+    function renderCards() {
+      const cards = [
+        ["concept", "TYPE TAGS", state.cards.concept.join(" / "), state.cards.explanations?.conceptTags || cardCopy.concept],
+        ["form", "FORM", state.cards.form, state.cards.explanations?.form || cardCopy.form],
+        ["genre", "GENRE", state.cards.genre, state.cards.explanations?.genre || cardCopy.genre],
+        ["style", "VOICE", state.cards.style, state.cards.explanations?.style || cardCopy.style]
+      ];
+
+      cardGrid.innerHTML = cards.map((card, index) => {
+        const category = card[0];
+        return `
+          <article class="card">
+            <div class="card-kicker"><span>${card[1]}</span><span>0${index + 1}</span></div>
+            <div class="card-value">${escapeHtml(card[2])}</div>
+            <p class="card-copy">${escapeHtml(card[3])}</p>
+            ${renderCardOptions(category)}
+            <div class="card-custom">
+              <input type="text" data-card-custom="${category}" placeholder="自定义 ${card[1].toLowerCase()}" />
+              <button class="small-btn" type="button" data-card-apply="${category}">写入</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      requestAnimationFrame(() => {
+        document.querySelectorAll(".card").forEach((card) => card.classList.add("revealed"));
+      });
+
+      cardGrid.querySelectorAll("[data-card-option]").forEach((button) => {
+        button.addEventListener("click", () => {
+          setCardValue(button.dataset.cardOption, button.dataset.value);
+        });
+      });
+
+      cardGrid.querySelectorAll("[data-card-apply]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const category = button.dataset.cardApply;
+          const input = cardGrid.querySelector(`[data-card-custom="${category}"]`);
+          setCardValue(category, input.value.trim());
+        });
+      });
+    }
+
+    function renderCardOptions(category) {
+      const options = state.cardOptions?.[category] || [];
+      const selected = getCardDisplayValue(category);
+
+      return `
+        <div class="card-options">
+          ${options.map((option) => {
+            const value = Array.isArray(option) ? option.join(" / ") : String(option);
+            const active = value === selected ? " selected" : "";
+            return `<button class="card-option${active}" type="button" data-card-option="${category}" data-value="${escapeHtml(value)}">${escapeHtml(value)}</button>`;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function getCardDisplayValue(category) {
+      if (category === "concept") return state.cards.concept.join(" / ");
+      return state.cards[category];
+    }
+
+    function setCardValue(category, rawValue) {
+      const value = String(rawValue || "").trim();
+      if (!value) return;
+
+      if (category === "concept") {
+        state.cards.concept = value.split(/[、,/，|]/).map((item) => item.trim()).filter(Boolean).slice(0, 4);
+      } else {
+        state.cards[category] = value;
+      }
+
+      state.cards.explanations = {
+        ...(state.cards.explanations || {}),
+        [category === "concept" ? "conceptTags" : category]: "这张卡片来自你的选择，将直接影响后续文本的推理方向。"
+      };
+
+      renderCards();
+    }
+
+    function matchLength(value) {
+      const text = value.trim();
+      const number = text.match(/(\d{2,7})/);
+      const words = number ? Number(number[1]) : null;
+
+      if (words !== null) {
+        if (words < 800) return level("L1", "火花片段", "1 到 3 次分岔", "它会像一枚短促的闪光，迅速照出核心场景。");
+        if (words < 3000) return level("L2", "短篇梦境", "3 到 5 次分岔", "它会保留梦的速度，让场景在几次选择里完成一次变形。");
+        if (words < 10000) return level("L3", "标准互动短篇", "5 到 8 次分岔", "这条小径有足够的空间，让一个念头长成完整故事。");
+        if (words < 50000) return level("L4", "深入章节", "8 到 15 次分岔", "你选择了更长的停留，地点、人物和异常会慢慢显影。");
+        return level("L5", "开放篇章", "15 次以上分岔", "它会以长程方式展开，像一片需要多次进入的地形。");
+      }
+
+      if (/很短|短|片段|一点|几百/.test(text)) return level("L1", "火花片段", "1 到 3 次分岔", "它会像一枚短促的闪光，迅速照出核心场景。");
+      if (/梦|小故事|短篇|一千|1000/.test(text)) return level("L2", "短篇梦境", "3 到 5 次分岔", "它会保留梦的速度，让场景在几次选择里完成一次变形。");
+      if (/章节|长一点|久一点|慢慢|探索/.test(text)) return level("L4", "深入章节", "8 到 15 次分岔", "你选择了更长的停留，地点、人物和异常会慢慢显影。");
+      if (/长篇|开放|一直|持续|很多/.test(text)) return level("L5", "开放篇章", "15 次以上分岔", "它会以长程方式展开，像一片需要多次进入的地形。");
+
+      return level("L3", "标准互动短篇", "5 到 8 次分岔", "这条小径有足够的空间，让一个念头长成完整故事。");
+    }
+
+    function level(id, name, rounds, copy) {
+      return { id, name, rounds, copy };
+    }
+
+    function renderLength() {
+      lengthOutput.innerHTML = `
+        <p class="level">${state.level.id} ${state.level.name}</p>
+        <p class="level-copy">${state.level.copy}<br />预计 ${state.level.rounds}。</p>
+      `;
+    }
+
+    async function startStory() {
+      enterStoryBtn.disabled = true;
+      enterStoryBtn.textContent = "开门中";
+
+      state.undoRemaining = 2;
+      state.turn = 0;
+      state.path = [];
+      state.history = [];
+      state.finalStory = null;
+
+      const opening = await generateOpening();
+
+      state.paragraphs = [opening.text || opening.scene || openingParagraph()];
+      state.choices = normalizeChoices(opening.choices || opening.options || makeChoices());
+      state.customInput = normalizeCustomInput(opening.customInput);
+
+      styleMark.textContent = state.cards.style;
+
+      renderStory();
+      showScreen("story");
+
+      enterStoryBtn.textContent = "进入小径";
+      enterStoryBtn.disabled = false;
+    }
+
+    async function generateOpening() {
+      try {
+        return await apiGenerate("story_opening", {
+          idea: state.idea,
+          cards: state.cards,
+          level: state.level,
+          theme: state.theme,
+          knowledgeBase: getKnowledgeContext(),
+          instruction: "生成必须严格围绕用户 idea，不得套用通用模板；选项数量根据情节需要决定。"
+        });
+      } catch (error) {
+        return {
+          text: openingParagraph(),
+          choices: makeChoices(),
+          customInput: shouldOfferCustomInput()
+        };
+      }
+    }
+
+    function openingParagraph() {
+      const tag = state.cards.concept[0];
+      return `你把这个念头交给 EDIMAGE WORLD 之后，世界先沉默了一会儿。光从你选择的皮肤里渗出，慢慢照亮最初的句子。${tag}从句子的边缘浮出来，贴着你的脚边延伸成一条小径。你知道，只要再往前一步，原先那句话就不再只是你的想法。`;
+    }
+
+    function makeChoices() {
+      const idea = state.idea;
+      const tag = state.cards?.concept?.[state.turn % state.cards.concept.length] || "那个念头";
+
+      if (/信|来信|消息|短信|邮件/.test(idea)) {
+        return [
+          `拆开那封与“${tag}”有关的信。`,
+          "先检查信封背面是否有第二层文字。",
+          "把信放回原处，观察世界因此发生的变化。"
+        ];
+      }
+
+      if (/便利店|商店|货架/.test(idea)) {
+        return [
+          "走向最深处那排没有标价的货架。",
+          "询问收银员为什么店外一直没有天亮。",
+          "拿起一件与你最初念头有关的商品。"
+        ];
+      }
+
+      if (/梦|睡|醒/.test(idea)) {
+        return [
+          "确认自己是否真的还在梦里。",
+          "跟随梦中反复出现的声音。",
+          "寻找能让自己醒来的物件。"
+        ];
+      }
+
+      if (/水|河|海|雨|湖/.test(idea)) {
+        return [
+          "把手伸进水面，摸索底下的东西。",
+          "沿着水流反方向走。",
+          "询问倒影为什么比你先一步行动。"
+        ];
+      }
+
+      return [
+        `靠近与“${tag}”有关的异常。`,
+        "停下来，听这个世界先说话。",
+        "把最初的念头再低声说一遍。"
+      ];
+    }
+
+    async function choose(choice) {
+      const choiceText = typeof choice === "string" ? choice : choice.label;
+
+      state.history.push({
+        turn: state.turn,
+        paragraphs: [...state.paragraphs],
+        path: [...state.path],
+        choices: [...state.choices],
+        customInput: state.customInput
+      });
+
+      state.path.push(choiceText);
+      state.turn += 1;
+
+      setChoicesLoading();
+
+      const step = await generateStoryStep(choiceText);
+
+      state.paragraphs.push(step.text || step.scene || nextParagraph(choiceText));
+
+      if (step.shouldEnd || state.turn >= maxTurnsByLevel() || /收束|结束|浮出水面/.test(choiceText)) {
+        await renderResult();
+        return;
+      }
+
+      state.choices = normalizeChoices(step.choices || step.options || makeChoices());
+      state.customInput = normalizeCustomInput(step.customInput);
+
+      renderStory();
+    }
+
+    async function submitCustomPath() {
+      const value = customInput.value.trim();
+      if (!value) return;
+
+      customInput.value = "";
+      await choose(`自定义：${value}`);
+    }
+
+    async function generateStoryStep(choice) {
+      try {
+        return await apiGenerate("story_step", {
+          idea: state.idea,
+          cards: state.cards,
+          level: state.level,
+          theme: state.theme,
+          path: state.path,
+          paragraphs: state.paragraphs,
+          selectedChoice: choice,
+          turn: state.turn,
+          knowledgeBase: getKnowledgeContext(),
+          instruction: "必须优先回应用户选择。如果用户选择为自定义内容，必须把自定义内容转化为下一段叙事因果。选项数量不固定。"
+        });
+      } catch (error) {
+        return {
+          text: nextParagraph(choice),
+          choices: makeChoices(),
+          customInput: shouldOfferCustomInput()
+        };
+      }
+    }
+
+    function normalizeChoices(choices) {
+      return ensureArray(choices)
+        .map((choice) => {
+          if (typeof choice === "string") {
+            return { label: choice, description: "" };
+          }
+
+          return {
+            label: choice.label || choice.title || choice.text || choice.value || "继续向前。",
+            description: choice.description || choice.reason || choice.intent || "",
+            risk: choice.risk || ""
+          };
+        })
+        .filter((choice) => choice.label)
+        .slice(0, 4);
+    }
+
+    function normalizeCustomInput(custom) {
+      if (!custom) return null;
+
+      if (typeof custom === "string") {
+        return {
+          enabled: true,
+          prompt: custom,
+          placeholder: "写下你要做的事、要问的话，或你想让世界记住的句子。"
+        };
+      }
+
+      return {
+        enabled: Boolean(custom.enabled),
+        prompt: custom.prompt || custom.label || "这里出现了一条不能被预设选项完全接住的小路。",
+        placeholder: custom.placeholder || "写下你要做的事、要问的话，或你想让世界记住的句子。"
+      };
+    }
+
+    function shouldOfferCustomInput() {
+      const enabled = state.turn === 0 || /梦|信|门|房间|问|说|名字/.test(state.idea);
+      return enabled
+        ? {
+            enabled: true,
+            prompt: "如果这些选项都没有接住你的直觉，你也可以写下一条自己的路。",
+            placeholder: "输入你想做的事、说的话、写下的记忆或选择。"
+          }
+        : { enabled: false };
+    }
+
+    function maxTurnsByLevel() {
+      const map = {
+        L1: 2,
+        L2: 4,
+        L3: 6,
+        L4: 10,
+        L5: 16
+      };
+
+      return map[state.level.id] || 6;
+    }
+
+    function setChoicesLoading() {
+      choicesEl.innerHTML = `<button class="choice-btn" type="button" disabled>小径正在继续显影……</button>`;
+    }
+
+    function nextParagraph(choice) {
+      const tag = state.cards.concept[state.turn % state.cards.concept.length] || "异常";
+      return `你选择了“${choice}”。这句话落下去的时候，周围的世界像被重新校准。${tag}不再只是卡片上的词，它开始拥有重量：可能是一扇门、一件物品、一段被谁故意删去的记忆。你意识到，这条小径并不是在带你离开最初的 idea，而是在逼近它真正害怕说出口的部分。`;
+    }
+
+    function renderStory() {
+      chapterMark.textContent = `chapter ${String(state.turn + 1).padStart(2, "0")}`;
+      storyText.innerHTML = state.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
+
+      choicesEl.innerHTML = state.choices.map((choice) => `
+        <button class="choice-btn" type="button">
+          ${escapeHtml(choice.label)}
+          ${choice.description ? `<small>${escapeHtml(choice.description)}</small>` : ""}
+        </button>
+      `).join("");
+
+      choicesEl.querySelectorAll("button").forEach((button, index) => {
+        button.addEventListener("click", () => choose(state.choices[index]));
+      });
+
+      renderCustomPath();
+
+      undoCount.textContent = `回望 ${state.undoRemaining}`;
+      undoBtn.disabled = state.history.length === 0 || state.undoRemaining === 0;
+
+      renderPath();
+    }
+
+    function renderCustomPath() {
+      const enabled = Boolean(state.customInput?.enabled);
+      customPath.classList.toggle("hidden", !enabled);
+
+      if (enabled) {
+        customPrompt.textContent = state.customInput.prompt;
+        customInput.placeholder = state.customInput.placeholder;
+      }
+    }
+
+    function renderPath() {
+      if (state.path.length === 0) {
+        pathList.innerHTML = `<li>第一处岔路还没有被选择。</li>`;
+        return;
+      }
+
+      pathList.innerHTML = state.path.map((choice, index) => `<li>${index + 1}. ${escapeHtml(choice)}</li>`).join("");
+    }
+
+    function undoTurn() {
+      if (state.undoRemaining === 0) {
+        showToast("没有更多回望了。小径开始收拢。");
+        return;
+      }
+
+      const previous = state.history.pop();
+      if (!previous) return;
+
+      state.undoRemaining -= 1;
+      state.turn = previous.turn;
+      state.paragraphs = previous.paragraphs;
+      state.path = previous.path;
+      state.choices = previous.choices;
+      state.customInput = previous.customInput || null;
+
+      renderStory();
+
+      const copy = state.undoRemaining === 0
+        ? "最后一次回望已经发生。接下来的路会记住你的脚步。"
+        : `你回到了上一处岔路。还剩 ${state.undoRemaining} 次回望的机会。`;
+
+      showToast(copy);
+    }
+
+    function showToast(copy) {
+      undoToast.textContent = copy;
+      undoToast.classList.add("show");
+
+      window.clearTimeout(showToast.timer);
+
+      showToast.timer = window.setTimeout(() => {
+        undoToast.classList.remove("show");
+      }, 3400);
+    }
+
+    async function renderResult() {
+      const finalStory = await generateFinalStory();
+      state.finalStory = finalStory;
+
+      const title = finalStory.title || makeTitle();
+      const lede = finalStory.openingLine || finalStory.lede || "这条路径暂时抵达了它的尽头。";
+      const body = textToParagraphs(finalStory.body || state.paragraphs.concat(endingParagraph()).join("\n\n"));
+
+      resultTitle.textContent = title;
+      resultLede.textContent = lede;
+      finalBody.innerHTML = body;
+
+      pathSummary.innerHTML = `
+        <strong>路径摘要</strong><br />
+        ${escapeHtml(state.path.length ? state.path.join(" → ") : "你停在了第一处光亮之前。")}<br /><br />
+        <strong>抽取卡片</strong><br />
+        ${escapeHtml(`${state.cards.concept.join(" / ")} · ${state.cards.form} · ${state.cards.genre} · ${state.cards.style} · ${state.level.id} ${state.level.name}`)}
+      `;
+
+      await completeAccessIfNeeded();
+      showScreen("result");
+    }
+
+    async function completeAccessIfNeeded() {
+      if (!state.access || state.access.mode !== "invite" || state.access.completed) return;
+
+      try {
+        const response = await fetch("/api/access/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: state.access.sessionId })
+        });
+        const result = await response.json();
+        state.access.completed = true;
+        state.access.remaining = result.remaining;
+        localStorage.setItem("edimage-access", JSON.stringify(state.access));
+      } catch (error) {
+        // 完成计数失败不阻断用户拿到当前文本；下次验证仍以后端为准。
+      }
+    }
+
+    async function generateFinalStory() {
+      try {
+        return await apiGenerate("finalize", {
+          idea: state.idea,
+          cards: state.cards,
+          level: state.level,
+          theme: state.theme,
+          path: state.path,
+          paragraphs: state.paragraphs,
+          knowledgeBase: getKnowledgeContext(),
+          instruction: "最终文本必须忠实整合用户 idea、路径选择、知识库和已生成正文，不得突然偏离主题。"
+        });
+      } catch (error) {
+        return {
+          title: makeTitle(),
+          openingLine: "这条路径暂时抵达了它的尽头。",
+          body: state.paragraphs.concat(endingParagraph()).join("\n\n")
+        };
+      }
+    }
+
+    function textToParagraphs(text) {
+      return String(text)
+        .split(/\n{2,}/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean)
+        .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+        .join("");
+    }
+
+    function makeTitle() {
+      const titleMap = {
+        "梦核": "梦里那圈正在变亮的光",
+        "都市异闻": "城市边缘的发光小径",
+        "魔幻现实": "一处不肯解释自己的房间",
+        "心理奇幻": "回望发生之前",
+        "日常怪谈": "便利店在夜里亮着",
+        "废墟浪漫": "水面保存了旧日期"
+      };
+
+      return titleMap[state.cards.genre] || "小径分岔处的故事";
+    }
+
+    function endingParagraph() {
+      return `最后，光慢慢退回世界的边缘。你站在原地，发现最初写下的念头已经变得陌生了一点，也更像一篇小说。它没有完全结束，只是暂时停在这里，等下一次有人把另一枚碎片交给世界。`;
+    }
+
+    function storyMarkdown() {
+      const title = resultTitle.textContent;
+      const bodyText = [...finalBody.querySelectorAll("p")].map((p) => p.textContent).join("\n\n");
+      const path = state.path.length ? state.path.join(" -> ") : "未选择";
+
+      return `# ${title}
+
+${resultLede.textContent}
+
+${bodyText}
+
+## 路径摘要
+
+${path}
+
+## 抽取卡片
+
+${state.cards.concept.join(" / ")} · ${state.cards.form} · ${state.cards.genre} · ${state.cards.style} · ${state.level.id} ${state.level.name}
+`;
+    }
+
+    async function copyStory() {
+      const text = storyMarkdown();
+
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = "已复制";
+        window.setTimeout(() => (copyBtn.textContent = "复制全文"), 1600);
+      } catch (error) {
+        copyBtn.textContent = "复制受限";
+        window.setTimeout(() => (copyBtn.textContent = "复制全文"), 1600);
+      }
+    }
+
+    function downloadStory() {
+      const blob = new Blob([storyMarkdown()], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = "edimage-world-story.md";
+      link.click();
+
+      URL.revokeObjectURL(url);
+    }
+
+    function resetToHome() {
+      state.idea = "";
+      state.cards = null;
+      state.cardOptions = null;
+      state.undoRemaining = 2;
+      state.turn = 0;
+      state.paragraphs = [];
+      state.choices = [];
+      state.path = [];
+      state.history = [];
+      state.customInput = null;
+      state.finalStory = null;
+      state.level = level("L3", "标准互动短篇", "5 到 8 次分岔", "如果你没有指定体量，世界会默认给这枚念头 5 到 8 次分岔。");
+
+      ideaInput.value = "";
+      lengthInput.value = "";
+      startBtn.disabled = true;
+      enterStoryBtn.disabled = true;
+
+      renderLength();
+      showScreen("home");
+    }
+
+    function openKnowledgeModal() {
+      renderKnowledgeList();
+      knowledgeModal.classList.remove("hidden");
+    }
+
+    function closeKnowledgeModal() {
+      knowledgeModal.classList.add("hidden");
+    }
+
+    function loadKnowledgeEntries() {
+      try {
+        return JSON.parse(localStorage.getItem("edimageKnowledgeEntries") || "[]");
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function storeKnowledgeEntries(entries) {
+      localStorage.setItem("edimageKnowledgeEntries", JSON.stringify(entries));
+    }
+
+    function getKnowledgeContext() {
+      return loadKnowledgeEntries()
+        .slice(-8)
+        .map((entry) => `标题：${entry.title}\n标签：${entry.tags}\n正文：${entry.text}`)
+        .join("\n\n---\n\n");
+    }
+
+    async function saveKnowledgeEntry() {
+      const title = knowledgeTitle.value.trim() || "未命名碎片";
+      const tags = knowledgeTags.value.trim();
+      const text = knowledgeText.value.trim();
+
+      if (!text) return;
+
+      const entry = {
+        id: Date.now(),
+        title,
+        tags,
+        text,
+        createdAt: new Date().toISOString()
+      };
+
+      const entries = loadKnowledgeEntries().concat(entry);
+      storeKnowledgeEntries(entries);
+
+      renderKnowledgeList();
+
+      knowledgeTitle.value = "";
+      knowledgeTags.value = "";
+      knowledgeText.value = "";
+
+      try {
+        await fetch("/api/knowledge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry)
+        });
+      } catch (error) {
+        // 本地存储已经完成；后端写入失败时不打断创作。
+      }
+    }
+
+    function clearKnowledgeEntries() {
+      storeKnowledgeEntries([]);
+      renderKnowledgeList();
+    }
+
+    function renderKnowledgeList() {
+      const entries = loadKnowledgeEntries();
+
+      if (!entries.length) {
+        knowledgeList.innerHTML = `<div class="knowledge-item">当前本地知识库还没有条目。知识库为空时，文本生成完全依赖智能体推理。</div>`;
+        return;
+      }
+
+      knowledgeList.innerHTML = entries.slice(-8).reverse().map((entry) => `
+        <div class="knowledge-item">
+          <strong>${escapeHtml(entry.title)}</strong><br />
+          ${escapeHtml(entry.tags || "未标记")}<br />
+          ${escapeHtml(entry.text.slice(0, 140))}${entry.text.length > 140 ? "..." : ""}
+        </div>
+      `).join("");
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
