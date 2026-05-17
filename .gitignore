@@ -3,3 +3,6 @@ node_modules
 .DS_Store
 data
 *.log
+ACCESS-STATE.json
+KNOWLEDGE-BASE.md
+KNOWLEDGE-ENTRIES.json
