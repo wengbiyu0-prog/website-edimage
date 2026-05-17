@@ -84,15 +84,16 @@ const server = createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && req.url === "/api/health") {
-      const accessState = await getAccessState();
+      const health = await getHealthState();
       sendJson(res, 200, {
         ok: true,
         app: "EDIMAGE WORLD",
         port,
         dataDir,
         storage: useSupabase ? "supabase" : "local",
+        supabase: health.supabase,
         inviteLimit,
-        totalStoryCompletions: accessState.totalStoryCompletions || 0
+        totalStoryCompletions: health.accessState.totalStoryCompletions || 0
       });
       return;
     }
@@ -608,6 +609,47 @@ async function saveAccessState(state) {
   await writeAccessState(state);
 }
 
+async function getHealthState() {
+  if (!useSupabase) {
+    await ensureRuntimeFiles();
+    return {
+      accessState: readAccessState(),
+      supabase: {
+        configured: false,
+        ok: false,
+        message: "SUPABASE_URL or SUPABASE_ANON_KEY is missing"
+      }
+    };
+  }
+
+  try {
+    const accessState = await readAccessStateSupabase();
+    return {
+      accessState,
+      supabase: {
+        configured: true,
+        ok: true,
+        message: "connected"
+      }
+    };
+  } catch (error) {
+    return {
+      accessState: {
+        inviteCompletions: 0,
+        completedSessions: [],
+        issuedInviteSessions: [],
+        totalStoryCompletions: 0,
+        completedStorySessions: []
+      },
+      supabase: {
+        configured: true,
+        ok: false,
+        message: sanitizePublicError(error)
+      }
+    };
+  }
+}
+
 function readKnowledgeEntries() {
   let entries = [];
 
@@ -870,6 +912,14 @@ function parseJsonContent(content) {
 
     throw error;
   }
+}
+
+function sanitizePublicError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return message
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/g, "Bearer [hidden]")
+    .replace(/apikey['":\s]+[A-Za-z0-9._-]+/gi, "apikey [hidden]")
+    .slice(0, 500);
 }
 
 function sendJson(res, status, data) {
