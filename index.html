@@ -1540,6 +1540,7 @@
       theme: readStoredText("edimage-theme", "amber"),
       cards: null,
       cardOptions: null,
+      cardDrawNonce: "",
       level: {
         id: "L3",
         name: "标准互动短篇",
@@ -1613,22 +1614,22 @@
 
     const fallbackDecks = {
       tags: [
-        ["梦境残片", "失落场所", "记忆回声"],
-        ["温柔异变", "城市幽灵", "错位童年"],
-        ["潮湿档案", "平行房间", "被遗忘的门"],
-        ["静物叙事", "迷宫日常", "身份裂隙"],
-        ["夜间水域", "私人神话", "过曝现实"]
+        ["城市幽灵", "往日回响", "创伤记忆"],
+        ["私人梦路", "童年梦核", "后室"],
+        ["城市幽灵", "私人梦路", "往日回响"],
+        ["创伤记忆", "后室", "童年梦核"],
+        ["往日回响", "私人梦路", "城市幽灵"]
       ],
-      forms: ["互动短篇", "梦境档案", "伪日记", "分岔叙事", "调查记录", "开放小说"],
-      genres: ["梦核", "都市异闻", "魔幻现实", "心理奇幻", "日常怪谈", "废墟浪漫"],
-      styles: ["冷静诗性", "潮湿梦呓", "低频悬疑", "影像化白描", "温柔怪诞", "像旧录像一样缓慢"]
+      forms: ["日记体", "散文体", "软件对话", "纪实档案", "严肃文学", "现代诗", "网文"],
+      genres: ["都市", "爱情", "惊悚", "爽感逆袭", "梦核", "怪谈", "恐怖", "犯罪", "喜剧", "古代"],
+      styles: ["荒诞文学", "存在主义", "实验小说", "哲学科幻", "犯罪悬疑网文", "浪漫主义"]
     };
 
     const cardCopy = {
       concept: "这些标签来自你的念头，会决定故事最先显影的意象和冲突。",
-      form: "体裁会决定这个世界以什么容器保存你的 idea。",
-      genre: "类型会决定现实偏移的方式、风险感和探索方向。",
-      style: "文风会决定叙事的呼吸、光线和语言颗粒。"
+      form: "体裁会决定这段故事以日记、档案、诗或网文等何种容器显影。",
+      genre: "类型会决定故事的现实偏移方式、冲突密度与情节推进方向。",
+      style: "这里的流派会决定语言的思想倾向、叙事肌理和回望方式。"
     };
 
     setTheme(state.theme);
@@ -1854,11 +1855,13 @@
 
     async function generateCards(idea) {
       try {
+        state.cardDrawNonce = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         const cards = await apiGenerate("cards", {
           idea,
           theme: state.theme,
+          drawNonce: state.cardDrawNonce,
           knowledgeBase: getKnowledgeContext(),
-          requirement: "所有推荐卡片必须根据用户 idea 智能生成，禁止通用模板。"
+          requirement: "所有推荐卡片必须根据用户 idea 智能生成，禁止通用模板；同一个 idea 再抽一次也要重新洗牌。"
         });
 
         return normalizeCardResponse(cards, idea);
@@ -1871,6 +1874,7 @@
 
     function normalizeCardResponse(cards, idea) {
       const fallback = drawCards(idea);
+      const drawSeed = seedFrom(`${idea}|${state.theme}|${state.cardDrawNonce || Date.now()}`);
 
       const conceptCandidates = normalizeConceptCandidates(
         cards.cards?.concept ||
@@ -1907,18 +1911,38 @@
         style: styleCandidates
       };
 
+      const selectedConcept = pickCandidate(conceptCandidates, drawSeed, 1) || fallback.concept;
+      const selectedForm = pickCandidate(formCandidates, drawSeed, 2) || fallback.form;
+      const selectedGenre = pickCandidate(genreCandidates, drawSeed, 3) || fallback.genre;
+      const selectedStyle = pickCandidate(styleCandidates, drawSeed, 4) || fallback.style;
+
       return {
-        concept: conceptCandidates[0] || fallback.concept,
-        form: formCandidates[0] || fallback.form,
-        genre: genreCandidates[0] || fallback.genre,
-        style: styleCandidates[0] || fallback.style,
+        concept: selectedConcept,
+        form: selectedForm,
+        genre: selectedGenre,
+        style: selectedStyle,
         explanations: cards.explanations || {
-          conceptTags: cards.analysis || cardCopy.concept,
+          conceptTags: formatAnalysisSummary(cards.analysis) || cardCopy.concept,
           form: cardCopy.form,
           genre: cardCopy.genre,
           style: cardCopy.style
         }
       };
+    }
+
+    function pickCandidate(candidates, seed, offset = 0) {
+      if (!Array.isArray(candidates) || candidates.length === 0) return null;
+      return candidates[(seed + offset) % candidates.length];
+    }
+
+    function formatAnalysisSummary(analysis) {
+      if (!analysis) return "";
+      if (typeof analysis === "string") return analysis;
+
+      const keywords = Array.isArray(analysis.keywords) ? analysis.keywords.slice(0, 3).join("、") : "";
+      const mood = Array.isArray(analysis.moodVector) ? analysis.moodVector.slice(0, 2).join("、") : "";
+      const atmosphere = analysis.atmosphere || analysis.sceneTemplate || "";
+      return [keywords && `关键词：${keywords}`, mood && `情绪：${mood}`, atmosphere].filter(Boolean).join("；");
     }
 
     function normalizeConceptCandidates(candidates) {
@@ -1956,12 +1980,12 @@
       return {
         concept: [
           fallback.concept,
-          ["未命名地点", fallback.concept[1] || "隐秘回声", "异常物件"],
-          ["私人梦路", "轻微偏移", "回声场景"]
+          ["城市幽灵", fallback.concept[1] || "往日回响", "创伤记忆"],
+          ["私人梦路", "童年梦核", "后室"]
         ],
-        form: [fallback.form, "梦境档案", "分岔叙事"],
-        genre: [fallback.genre, "梦核", "日常怪谈"],
-        style: [fallback.style, "低频悬疑", "温柔怪诞"]
+        form: [fallback.form, "纪实档案", "现代诗"],
+        genre: [fallback.genre, "梦核", "怪谈"],
+        style: [fallback.style, "实验小说", "存在主义"]
       };
     }
 
@@ -1978,15 +2002,15 @@
       let tagSet = pick(fallbackDecks.tags, seed);
 
       if (/梦|睡|醒|夜|房间/.test(idea)) {
-        tagSet = ["梦境残片", "平行房间", "记忆回声"];
+        tagSet = ["私人梦路", "童年梦核", "后室"];
       }
 
       if (/便利店|街|城市|路|站|电梯/.test(idea)) {
-        tagSet = ["失落场所", "城市幽灵", "温柔异变"];
+        tagSet = ["城市幽灵", "往日回响", "创伤记忆"];
       }
 
       if (/水|河|雨|海|湖|潮/.test(idea)) {
-        tagSet = ["夜间水域", "潮湿档案", "被遗忘的门"];
+        tagSet = ["私人梦路", "往日回响", "创伤记忆"];
       }
 
       return {
@@ -2144,7 +2168,7 @@
           level: state.level,
           theme: state.theme,
           knowledgeBase: getKnowledgeContext(),
-          instruction: "生成必须严格围绕用户 idea，不得套用通用模板；选项数量根据情节需要决定。"
+          instruction: "生成必须严格围绕用户 idea，不得套用通用模板；先根据体裁/类型/流派决定叙事视角和文本形态；选项数量根据情节需要决定。"
         });
       } catch (error) {
         return {
@@ -2157,7 +2181,7 @@
 
     function openingParagraph() {
       const tag = state.cards.concept[0];
-      return `你把这个念头交给 EDIMAGE WORLD 之后，世界先沉默了一会儿。光从你选择的皮肤里渗出，慢慢照亮最初的句子。${tag}从句子的边缘浮出来，贴着你的脚边延伸成一条小径。你知道，只要再往前一步，原先那句话就不再只是你的想法。`;
+      return fallbackParagraphByForm("opening", tag);
     }
 
     function makeChoices() {
@@ -2254,7 +2278,7 @@
           selectedChoice: choice,
           turn: state.turn,
           knowledgeBase: getKnowledgeContext(),
-          instruction: "必须优先回应用户选择。如果用户选择为自定义内容，必须把自定义内容转化为下一段叙事因果。选项数量不固定。"
+          instruction: "必须优先回应用户选择。如果用户选择为自定义内容，必须把自定义内容转化为下一段叙事因果。继续执行已选体裁/类型/流派，不要退回统一第二人称。选项数量不固定。"
         });
       } catch (error) {
         return {
@@ -2329,7 +2353,7 @@
 
     function nextParagraph(choice) {
       const tag = state.cards.concept[state.turn % state.cards.concept.length] || "异常";
-      return `你选择了“${choice}”。这句话落下去的时候，周围的世界像被重新校准。${tag}不再只是卡片上的词，它开始拥有重量：可能是一扇门、一件物品、一段被谁故意删去的记忆。你意识到，这条小径并不是在带你离开最初的 idea，而是在逼近它真正害怕说出口的部分。`;
+      return fallbackParagraphByForm("step", tag, choice);
     }
 
     function renderStory() {
@@ -2482,7 +2506,7 @@
           path: state.path,
           paragraphs: state.paragraphs,
           knowledgeBase: getKnowledgeContext(),
-          instruction: "最终文本必须忠实整合用户 idea、路径选择、知识库和已生成正文，不得突然偏离主题。"
+          instruction: "最终文本必须忠实整合用户 idea、路径选择、知识库和已生成正文，并保持已选体裁的文本形态，不得突然偏离主题或退回普通第二人称。"
         });
       } catch (error) {
         return {
@@ -2516,7 +2540,59 @@
     }
 
     function endingParagraph() {
-      return `最后，光慢慢退回世界的边缘。你站在原地，发现最初写下的念头已经变得陌生了一点，也更像一篇小说。它没有完全结束，只是暂时停在这里，等下一次有人把另一枚碎片交给世界。`;
+      return fallbackParagraphByForm("ending", state.cards.concept[0] || "念头");
+    }
+
+    function fallbackParagraphByForm(kind, tag, choice = "") {
+      const form = state.cards?.form || "";
+      const genre = state.cards?.genre || "";
+      const style = state.cards?.style || "";
+      const idea = state.idea || "这个念头";
+
+      if (form === "日记体") {
+        if (kind === "opening") return `2006.04.14，14:10。\n我把“${idea}”写在纸页边缘，墨水没有干，${tag}却先从字缝里渗出来。它不像灵感，更像一条很久以前就埋在我房间里的路。`;
+        if (kind === "step") return `我记录下刚才的决定：“${choice}”。写完这句，${tag}改变了位置，像有人偷偷翻动了我的日记。我开始怀疑，这不是选择，而是我终于承认自己曾经来过这里。`;
+        return `我合上这一页时，${tag}还在纸背发亮。故事没有结束，只是被我暂时夹进了某个日期里。`;
+      }
+
+      if (form === "软件对话") {
+        if (kind === "opening") return `[WORLD_BOOT]\ninput="${idea}"\nstatus=unstable\n系统检测到 ${tag} 正在覆盖默认场景。用户界面短暂闪烁，随后弹出一条无法关闭的提示：请不要相信第一条路径。`;
+        if (kind === "step") return `[USER_ACTION]\n${choice}\n[WORLD_RESPONSE]\n${tag} 已更新叙事权限。上一轮文本被标记为“可疑但有效”，新的分支正在从未保存的缓存里长出来。`;
+        return `[SESSION_SAVED]\n${tag} 被写入 EDIMAGE WORLD。部分日志缺失，部分缺失正在反过来证明它存在。`;
+      }
+
+      if (form === "纪实档案") {
+        if (kind === "opening") return `档案编号 EW-${String(seedFrom(idea)).slice(0, 4)}。\n摘录对象：${idea}。\n初步判断：${tag} 并非隐喻，而是一组被误存为文学材料的现场痕迹。以下内容来自残页、口述与一段无法确认来源的录音。`;
+        if (kind === "step") return `补充材料：当事路径选择为“${choice}”。\n记录员注意到，${tag} 在此处第一次与前文发生交叉，原本独立的证词开始互相指认。`;
+        return `结案附注：${tag} 仍未被解释。档案暂封，但所有复印件都在夜间出现了同一行批注。`;
+      }
+
+      if (form === "现代诗") {
+        if (kind === "opening") return `${idea}\n被放在光里\n没有立刻融化\n\n${tag} 在句子的背面\n轻轻敲门\n像一枚不知道该归还给谁的梦`;
+        if (kind === "step") return `“${choice}”\n落下去\n不是声音\n\n${tag} 偏移了一厘米\n世界因此\n露出它缝合过的地方`;
+        return `${tag} 退到页边\n仍然亮着\n\n这不是结束\n只是小径\n把下一行留给后来的人`;
+      }
+
+      if (form === "网文") {
+        if (kind === "opening") return `没人想到，${idea} 会在这一刻变成真的。更没人想到，第一个显影的不是路，而是${tag}。它一出现，周围所有规则都像被强行改写，连空气里都多了一种即将反转的味道。`;
+        if (kind === "step") return `选择“${choice}”之后，局面彻底变了。${tag} 不再躲在暗处，它直接把下一层冲突推到眼前：要么顺着它继续走，要么亲手撕开这个世界最不想暴露的设定。`;
+        return `当一切暂时落定，${tag} 仍然没有消失。真正的底牌还没翻开，但这条路径已经留下了足够明显的裂缝。`;
+      }
+
+      if (form === "严肃文学") {
+        if (kind === "opening") return `很久以后，关于“${idea}”的记忆仍会在某个普通下午返回。那时，${tag} 尚未显露出它的全部含义，只是在一段日常生活的边缘，像一枚被人故意留下的钉子。`;
+        if (kind === "step") return `当“${choice}”成为事实，人物之间原本松散的关系忽然收紧。${tag} 不再只是象征，它进入了生活的细部，进入沉默、迟疑和那些没有被说出口的责任。`;
+        return `故事停在这里，并不是因为问题已经解决，而是因为${tag}终于变成了无法再回避的现实。`;
+      }
+
+      if (/犯罪|悬疑/.test(genre + style)) {
+        if (kind === "opening") return `第一份线索来自“${idea}”。它看起来像一件无害的小事，直到${tag}出现在错误的时间、错误的位置，并且没有任何人愿意承认见过它。`;
+        if (kind === "step") return `“${choice}”让时间线出现了新的缺口。${tag} 被重新放回证据链时，所有人都意识到，真正的问题不是它从哪里来，而是谁一直在替它遮掩。`;
+      }
+
+      if (kind === "opening") return `最初只有“${idea}”这一句话。后来，${tag} 从句子的暗处浮起，像一块不肯沉下去的旧影。世界没有解释它，只是把第一处岔路轻轻推到眼前。`;
+      if (kind === "step") return `“${choice}”改变了场景的重心。${tag} 开始拥有重量，前文里看似偶然的细节也因此转向，像在提醒这条路并不是随机生成的。`;
+      return `${tag} 慢慢退回世界边缘。故事没有完全结束，只是暂时停在这里，等下一枚灵思碎片把它再次唤醒。`;
     }
 
     function storyMarkdown() {

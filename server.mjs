@@ -33,6 +33,11 @@ const mimeTypes = {
   ".md": "text/markdown; charset=utf-8"
 };
 
+const FORM_OPTIONS = ["日记体", "散文体", "软件对话", "纪实档案", "严肃文学", "现代诗", "网文"];
+const TAG_OPTIONS = ["城市幽灵", "私人梦路", "童年梦核", "往日回响", "创伤记忆", "后室"];
+const GENRE_OPTIONS = ["都市", "爱情", "惊悚", "爽感逆袭", "梦核", "怪谈", "恐怖", "犯罪", "喜剧", "古代"];
+const STYLE_OPTIONS = ["荒诞文学", "存在主义", "实验小说", "哲学科幻", "犯罪悬疑网文", "浪漫主义"];
+
 const systemPrompt = `
 你是 EDIMAGE WORLD 的互动小说生成引擎。
 
@@ -49,6 +54,10 @@ EDIMAGE WORLD 是一个从“一句话念头”进入的文本开放世界。它
 8. 所有卡片、正文和选项必须围绕用户 idea、知识库和当前正文推进。
 9. 禁止生成与用户 idea 无关的泛化模板选项。
 10. 如果知识库非空，优先吸收知识库的意象、地点、语言和设定。
+11. 生成链路遵循：输入解析 -> 主题匹配 -> 剧情抽卡 -> 分支生成 -> 知识库召回 -> 二次回望 -> 最终整合。
+12. 允许荒诞、幽默、彩蛋和断裂，但主线逻辑必须可回望、可接续。
+13. 禁止默认使用第二人称“你”。除非体裁/类型确实需要读者代入，否则必须根据体裁切换第一人称、第三人称、档案口吻、对话记录、诗行或网文叙述。
+14. 体裁、类型、流派不是标签装饰，必须改变文本形态、叙事视角、句法密度和段落结构。
 `;
 
 const server = createServer(async (req, res) => {
@@ -336,26 +345,35 @@ async function handleStoryComplete(req, res) {
 async function buildPrompt(stage, payload) {
   const knowledge = await buildKnowledgePrompt(payload);
   const easter = buildEasterPrompt(payload);
+  const framework = buildGenerationFrameworkPrompt();
+  const narrativeContract = buildNarrativeContractPrompt(payload);
 
   if (stage === "cards") {
     return `
-根据用户想法，为 EDIMAGE WORLD 生成四张抽卡结果。
+根据用户想法，为 EDIMAGE WORLD 生成抽卡结果。先做输入解析，再做主题匹配，再做剧情抽卡。
 
 用户想法：
 ${payload.idea}
 
+本次抽卡随机因子：
+${payload.drawNonce || "none"}
+
+${framework}
+
 ${knowledge}
 
 要求：
-1. 必须根据用户想法推理，不允许返回泛化模板。
-2. conceptTags 是最终选中的 3 个类型标签。
+1. 必须先提取关键词、情绪向量、潜在主题，再据此选卡。
+2. conceptTags 是最终选中的 3 个标签，优先从给定标签库中抽取，也可在必要时轻微变体，但不能偏离用户 idea。
 3. candidates.conceptTags 返回 3 组候选，每组 3 个标签。
-4. candidates.form / genre / style 各返回 3 个候选。
-5. 每个候选都必须能解释它与用户 idea 的关系。
-6. 体裁 form 可从“互动短篇、梦境档案、伪日记、分岔叙事、调查记录、开放小说”中选择，也可生成更贴切表达。
-7. 类型 genre 要贴近用户 idea 的世界倾向。
-8. 文风 style 要短，但有质感。
+4. form 必须优先从这些体裁中选择：${FORM_OPTIONS.join("、")}。
+5. genre 必须优先从这些类型中选择：${GENRE_OPTIONS.join("、")}。
+6. style 这里承载“流派/文风倾向”，优先从这些流派中选择：${STYLE_OPTIONS.join("、")}。
+7. 每个候选都必须解释它与用户 idea 的关系，不允许模板式空话。
+8. 输出 analysis 时，要写出输入解析、主题匹配结果和可能触发的剧情抽卡方向。
 9. explanations 每项都只写一句，短、轻、有画面。
+10. 每次抽卡都要把“本次抽卡随机因子”当作洗牌依据；同一个 idea 再抽一次，也必须在候选排序、措辞或组合上出现变化。
+11. candidates 不是静态菜单。它们必须像本次 idea 的 3 到 5 种显影方案，而不是固定词库的机械复用。
 
 只返回 JSON：
 {
@@ -363,6 +381,15 @@ ${knowledge}
   "form": "",
   "genre": "",
   "style": "",
+  "analysis": {
+    "keywords": ["", ""],
+    "moodVector": ["", ""],
+    "latentThemes": ["", ""],
+    "sceneTemplate": "",
+    "atmosphere": "",
+    "plotDraw": "",
+    "easterSignal": ""
+  },
   "candidates": {
     "conceptTags": [["", "", ""], ["", "", ""], ["", "", ""]],
     "form": ["", "", ""],
@@ -381,7 +408,7 @@ ${knowledge}
 
   if (stage === "story_opening") {
     return `
-为 EDIMAGE WORLD 生成互动小说开场。
+为 EDIMAGE WORLD 生成互动小说开场。要显式完成：主题匹配、剧情抽卡、知识库召回的初次融合。
 
 用户最初想法：
 ${payload.idea}
@@ -392,34 +419,45 @@ ${JSON.stringify(payload.cards)}
 体量：
 ${JSON.stringify(payload.level)}
 
+${framework}
+
 ${knowledge}
 
 ${easter}
 
+${narrativeContract}
+
 要求：
 1. text 写 260 到 520 个中文字。
-2. 开场必须直接吸收用户 idea 中的具体对象、情境或矛盾。
-3. 不要写泛用的“黑暗、光、小径”模板，除非这些意象能和用户 idea 发生具体关系。
-4. choices 返回 1 到 4 个选择，数量根据情节点决定。
-5. 每个选择必须与开场正文里的具体对象、地点、人物、异常或用户 idea 相关。
-6. customInput 根据情节点判断是否开放；不需要时 enabled 为 false。
+2. 开场必须直接吸收用户 idea 中的具体对象、情境或矛盾，不能先空镜头抒情。
+3. 开场要给出明确的场景模板与氛围描述，但不要像策划案一样说教。
+4. choices 默认生成 2 到 3 个；只有在沉浸体验强烈需要时，才使用 1 个或 4 个。
+5. 每个选择都要像剧情片段的延长线，而不是任务按钮。
+6. customInput 根据情节点判断是否开放；如果开放，prompt 必须非常具体，像在邀请用户写下一句会改变情节的话。
 7. 如果用户 idea 命中彩蛋词，只记录“稍后可插入”，不要在开场暴露彩蛋。
+8. 输出 branchMemory，用一句短语记录这一轮分支的核心状态，供后续回望。
+9. 正文第一句必须体现本轮体裁，不许以“你醒来/你发现/你走进/你站在”这种默认互动小说句式开头，除非 narrativeMode 明确选择第二人称沉浸模式。
+10. choices 的数量和文本必须根据当前情节点推理生成；不要每轮都给 3 个，不要把选项写成通用任务。
 
 只返回 JSON：
 {
+  "narrativeMode": "",
   "text": "",
   "choices": ["", "", ""],
   "customInput": {
     "enabled": false,
     "prompt": ""
-  }
+  },
+  "branchMemory": "",
+  "atmosphere": "",
+  "plotDraw": ""
 }
 `;
   }
 
   if (stage === "story_step") {
     return `
-继续生成 EDIMAGE WORLD 的互动小说下一轮。
+继续生成 EDIMAGE WORLD 的互动小说下一轮。要显式完成：分支生成、知识库召回、二次回望。
 
 用户最初想法：
 ${payload.idea}
@@ -442,37 +480,48 @@ ${payload.selectedChoice}
 当前轮次：
 ${payload.turn}
 
+${framework}
+
 ${knowledge}
 
 ${easter}
+
+${narrativeContract}
 
 要求：
 1. text 写 260 到 520 个中文字。
 2. 延续已有正文，不要重启故事。
 3. 必须承接用户刚刚选择，尤其是“自定义：”开头的自由输入。
-4. choices 返回 1 到 4 个选择，数量由当前情节点决定。
-5. 每个选择必须引用或转化当前正文、用户 idea 或知识库中的具体元素。
-6. 禁止输出与用户 idea 无关的模板选项。
-7. customInput 根据情节点判断是否开放；不是每轮都开放。
-8. 如果故事适合结束，shouldEnd 可以为 true；否则 false。
-9. 如果彩蛋已在前端插入，本轮必须回到原主线叙事。
+4. 在下文生成前，先做一次二次回望：检查当前选择是否与前文人物、地点、因果、情绪一致；若不一致，要在 text 中自然修正。
+5. choices 默认返回 2 到 3 个，且必须体现清晰的方向分叉。
+6. 每个选择必须引用或转化当前正文、用户 idea、已选标签、体裁、类型、流派或知识库中的具体元素。
+7. 禁止输出与用户 idea 无关的模板选项。
+8. customInput 根据情节点判断是否开放；不是每轮都开放。
+9. 如果故事适合结束，shouldEnd 可以为 true；否则 false。
+10. 如果彩蛋已在前端插入，本轮必须回到原主线叙事。
+11. 输出 callbackLines，列出本轮主动回望了哪些前文线索。
+12. 必须延续或合理演化 narrativeMode，不能突然退回统一第二人称旁白。
+13. choices 必须由本轮 text 的具体情境长出来；数量可以是 1、2、3 或 4，按沉浸体验决定。
 
 只返回 JSON：
 {
+  "narrativeMode": "",
   "text": "",
   "choices": ["", "", ""],
   "customInput": {
     "enabled": false,
     "prompt": ""
   },
-  "shouldEnd": false
+  "shouldEnd": false,
+  "branchMemory": "",
+  "callbackLines": ["", ""]
 }
 `;
   }
 
   if (stage === "finalize") {
     return `
-把互动小说过程整理成一篇完整小说。
+把互动小说过程整理成一篇完整小说。要完成最终整合与终局回望。
 
 用户最初想法：
 ${payload.idea}
@@ -489,22 +538,31 @@ ${JSON.stringify(payload.path)}
 正文片段：
 ${JSON.stringify(payload.paragraphs)}
 
+${framework}
+
 ${knowledge}
+
+${narrativeContract}
 
 要求：
 1. body 是连贯小说正文，不要保留“用户选择了”这种日志感。
-2. 优先保留用户 idea 和知识库中真正出现过的意象，不要强行套固定风格。
-3. title 要短，有作品感。
-4. openingLine 是一句引言。
-5. summary 是 80 字以内摘要。
-6. 如果路径中出现彩蛋，正文可以用一句极短的异物感痕迹带过，但不要让彩蛋吞掉主线。
+2. 优先保留用户 idea、分支记忆和知识库中真正出现过的意象，不要强行套固定风格。
+3. 在正文成稿前做一次回望重构：让前文看似偶然的句子、物件、情绪至少有 1 次照应。
+4. title 要短，有作品感。
+5. openingLine 是一句引言。
+6. summary 是 80 字以内摘要。
+7. 如果路径中出现彩蛋，正文可以用一句极短的异物感痕迹带过，但不要让彩蛋吞掉主线。
+8. 输出 callbacks，概述这篇成稿如何回望前文。
+9. body 必须保持一路选定的体裁格式，不要在终稿里改回普通第二人称互动小说。
 
 只返回 JSON：
 {
+  "narrativeMode": "",
   "title": "",
   "openingLine": "",
   "body": "",
-  "summary": ""
+  "summary": "",
+  "callbacks": ["", ""]
 }
 `;
   }
@@ -512,13 +570,38 @@ ${knowledge}
   return JSON.stringify(payload);
 }
 
+function buildNarrativeContractPrompt(payload) {
+  const cards = payload.cards || {};
+  const form = cards.form || "未定体裁";
+  const genre = cards.genre || "未定类型";
+  const style = cards.style || "未定流派";
+  const tags = Array.isArray(cards.concept)
+    ? cards.concept.join("、")
+    : Array.isArray(cards.conceptTags)
+      ? cards.conceptTags.join("、")
+      : "";
+
+  return `
+叙事形态契约：
+- 当前体裁：${form}
+- 当前类型：${genre}
+- 当前流派/文风：${style}
+- 当前标签：${tags || "未定"}
+
+执行规则：
+1. 先在心里决定 narrativeMode，再写正文。narrativeMode 必须具体，例如“第一人称日记”“档案摘录与证词拼贴”“软件系统日志与用户对话”“现代诗短行”“第三人称严肃文学”“犯罪悬疑网文强钩子”。
+2. narrativeMode 必须由体裁 + 类型 + 流派共同决定，不得只改几个形容词。
+3. 体裁为“日记体”时，正文要像私密日期记录；体裁为“软件对话”时，正文要像界面消息、日志或系统回执；体裁为“纪实档案”时，正文要像档案、证词、编号材料；体裁为“现代诗”时，正文要使用诗行和断裂；体裁为“网文”时，正文要有明确钩子和推进。
+4. 类型决定冲突材料，流派决定语言和思想质地。二者必须能在正文中被读出来。
+5. 禁止把所有组合都写成“第二人称梦境探索”。第二人称只是可选叙事策略，不是默认值。
+6. 选项也要继承该体裁：档案体的选项可以像“调取第 3 份证词”，软件对话可以像“输入 override 指令”，现代诗可以像“把下一行留白还给雨”。
+`;
+}
+
 async function buildKnowledgePrompt(payload) {
   const browserKnowledge = String(payload.knowledgeBase || "").trim();
   const sharedKnowledge = useSupabase
-    ? (await listKnowledgeEntriesSupabase())
-        .slice(-24)
-        .map((entry) => `标题：${entry.title}\n缔造者：${entry.author || "匿名缔造者"}\n标签：${entry.tags || ""}\n正文：${entry.text || ""}`)
-        .join("\n\n---\n\n")
+    ? formatRetrievedKnowledge(await retrieveKnowledgeEntries(payload))
     : readOptionalFile(knowledgeBasePath).replace("# EDIMAGE WORLD 知识库", "").trim();
   const combined = [sharedKnowledge, browserKnowledge].filter(Boolean).join("\n\n---\n\n").slice(-9000);
 
@@ -531,9 +614,10 @@ async function buildKnowledgePrompt(payload) {
 ${combined}
 
 知识库规则：
-1. 优先吸收知识库里的意象、地点、语言质地和设定。
-2. 不要生硬照抄整段知识库文本。
-3. 知识库内容必须服务用户本次 idea，不得抢走主线。
+1. 优先吸收知识库里的意象、地点、语言质地、世界设定和历史片段。
+2. 本次召回是按用户 idea、已选卡片、已有正文、当前选择做语义近邻的关键词匹配，不是机械拼贴。
+3. 不要生硬照抄整段知识库文本。
+4. 知识库内容必须服务用户本次 idea，不得抢走主线。
 `;
 }
 
@@ -555,6 +639,126 @@ ${library}
 彩蛋状态：${payload.easterEgg || (payload.easterEggUsed ? "already_used" : "none")}
 规则：彩蛋只作为短暂非常规插入，结束后必须回到用户原本的文本主线。
 `;
+}
+
+function buildGenerationFrameworkPrompt() {
+  return `
+生成模板 v2：
+- 体裁候选：${FORM_OPTIONS.join("、")}
+- 标签候选：${TAG_OPTIONS.join("、")}
+- 类型候选：${GENRE_OPTIONS.join("、")}
+- 流派候选：${STYLE_OPTIONS.join("、")}
+
+体裁执行矩阵：
+- 日记体：第一人称，可带日期/时间/自我修正；像隐秘记录，不像说明文。
+- 散文体：可第一或第三人称；重意象和节奏，弱化按钮感，句子有呼吸。
+- 软件对话：使用界面日志、系统消息、用户输入、异常提示、对话气泡等格式；不写成普通小说段落。
+- 纪实档案：使用编号、证词、附注、调查记录、时间线、摘录；语气克制，像材料拼合。
+- 严肃文学：第三人称或有限第一人称；重心理、社会关系、动作细节，少玄虚口号。
+- 现代诗：使用短行、断裂、留白、重复和跳接；仍要保留可互动的情节点。
+- 网文：节奏更快，冲突更清楚，可有爽点和钩子；但仍保持 EDIMAGE WORLD 的怪异气质。
+
+类型执行矩阵：
+- 都市：具体街区、通勤、楼道、便利店、监控、租房、地铁等现实细节。
+- 爱情：关系张力、未说出口的话、误认、靠近和撤退。
+- 惊悚/恐怖/怪谈：异常规则、感官压迫、禁忌和逐步升级。
+- 爽感逆袭：压迫关系、反转节点、明确的释放感。
+- 梦核/后室：空间错位、童年物件、循环房间、低解释度。
+- 犯罪：证据、动机、时间线、嫌疑关系和误导。
+- 喜剧：荒诞节奏、错位逻辑、意外转折，但不破坏主线。
+- 古代：制度、礼法、器物、称谓和古典空间，不要现代白话硬套。
+
+流派执行矩阵：
+- 荒诞文学：逻辑错位要自洽，荒诞不是随机堆砌。
+- 存在主义：行动选择要带有自由、责任、孤独或荒谬感。
+- 实验小说：可使用碎片、表格、脚注、反复、非线性结构。
+- 哲学科幻：概念必须落在人物处境和可感知机制上。
+- 犯罪悬疑网文：强钩子、线索递进、反转预备。
+- 浪漫主义：情绪浓度更高，强调自然/命运/激情，但不空泛。
+
+视角规则：
+1. 不要所有文本都写成“你醒来/你发现/你走进”。
+2. 根据体裁主动选择人称和格式；同一篇内部可以稳定保持一种主视角。
+3. 如果使用第二人称，必须说明它是体裁选择的一部分，例如软件对话、沉浸式选择或怪谈规则。
+
+链路要求：
+1. 输入解析：提取关键词、情绪、潜在主题。
+2. 主题匹配：把体裁、标签、类型、流派映射为场景模板与氛围描述。
+3. 剧情抽卡：根据用户 idea 权重决定触发事件、异常物件、人物关系或彩蛋信号。
+4. 分支生成：关键节点优先生成 2 到 3 条分支，并保留分支记忆。
+5. 知识库召回：优先融合相关文本，保证世界连续性。
+6. 二次回望：主动检查并回收前文线索，增强逻辑连续性。
+7. 最终整合：让正文成为一篇真正可读的小说片段，而不是流程记录。
+`;
+}
+
+async function retrieveKnowledgeEntries(payload) {
+  const entries = useSupabase ? await listKnowledgeEntriesSupabase() : readKnowledgeEntries();
+  if (!entries.length) return [];
+
+  const terms = extractRetrievalTerms(payload);
+  if (!terms.length) {
+    return entries.slice(-8);
+  }
+
+  return entries
+    .map((entry) => ({
+      entry,
+      score: scoreKnowledgeEntry(entry, terms)
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || String(a.entry.createdAt).localeCompare(String(b.entry.createdAt)))
+    .slice(0, 8)
+    .map((item) => item.entry);
+}
+
+function formatRetrievedKnowledge(entries) {
+  return entries
+    .map((entry) => `标题：${entry.title}\n缔造者：${entry.author || "匿名缔造者"}\n标签：${entry.tags || ""}\n正文：${entry.text || ""}`)
+    .join("\n\n---\n\n");
+}
+
+function extractRetrievalTerms(payload) {
+  const raw = [
+    payload.idea,
+    payload.selectedChoice,
+    payload.easterEgg,
+    payload.theme,
+    payload.cards?.form,
+    payload.cards?.genre,
+    payload.cards?.style,
+    ...(Array.isArray(payload.cards?.concept) ? payload.cards.concept : []),
+    ...(Array.isArray(payload.cards?.conceptTags) ? payload.cards.conceptTags : []),
+    ...(Array.isArray(payload.path) ? payload.path : []),
+    ...(Array.isArray(payload.paragraphs) ? payload.paragraphs.slice(-3) : [])
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const unique = new Set(
+    raw
+      .split(/[\s,，。！？、；：“”"'()（）【】\[\]\-_/|]+/)
+      .map((part) => part.trim())
+      .filter((part) => part.length >= 2)
+  );
+
+  return [...unique].slice(0, 36);
+}
+
+function scoreKnowledgeEntry(entry, terms) {
+  const haystack = `${entry.title} ${entry.author} ${entry.tags} ${entry.text}`.toLowerCase();
+  let score = 0;
+
+  for (const term of terms) {
+    const normalized = String(term).toLowerCase();
+    if (!normalized) continue;
+    if (haystack.includes(normalized)) {
+      score += entry.tags.toLowerCase().includes(normalized) ? 3 : 1;
+      score += entry.title.toLowerCase().includes(normalized) ? 2 : 0;
+    }
+  }
+
+  return score;
 }
 
 function readOptionalFile(filePath) {
