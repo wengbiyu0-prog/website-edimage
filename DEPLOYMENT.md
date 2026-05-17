@@ -18,12 +18,14 @@
 APP_BASE_URL=https://edimage.art
 OPENROUTER_API_KEY=你的 OpenRouter key
 OPENROUTER_MODEL=deepseek/deepseek-chat
-SUPABASE_URL=https://你的项目id.supabase.co
+SUPABASE_URL=https://vjnwjjzysudhwqbxuwji.supabase.co
 SUPABASE_ANON_KEY=你的 Supabase anon key
 INVITE_CODE=edimage-world
 DEVELOPER_CODE=edithfish
 INVITE_LIMIT=10
 ```
+
+本地调试如果也要使用同一个云端知识库，需要在本地 `.env` 中加入同样的 `SUPABASE_URL` 和 `SUPABASE_ANON_KEY`。如果这两个变量缺失，程序会自动回退到本地文件存储。
 
 ## Render 上线步骤
 

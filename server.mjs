@@ -97,7 +97,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && req.url === "/api/stats") {
-      const accessState = readAccessState();
+      const accessState = await getAccessState();
       sendJson(res, 200, {
         ok: true,
         totalStoryCompletions: accessState.totalStoryCompletions || 0
