@@ -90,6 +90,7 @@ const server = createServer(async (req, res) => {
         app: "EDIMAGE WORLD",
         port,
         dataDir,
+        storage: useSupabase ? "supabase" : "local",
         inviteLimit,
         totalStoryCompletions: accessState.totalStoryCompletions || 0
       });
