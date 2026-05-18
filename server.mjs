@@ -1198,6 +1198,7 @@ async function serveStatic(req, res) {
 function isPublicAsset(requested) {
   return (
     requested === "index.html" ||
+    requested === "memory.html" ||
     requested === "styles.css" ||
     requested === "preview-desktop.png" ||
     requested === "preview-mobile.png" ||
