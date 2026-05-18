@@ -1133,6 +1133,53 @@
       background: rgba(255,255,255,0.04);
     }
 
+    .knowledge-item.compact {
+      max-height: 118px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .knowledge-item.compact::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 40px;
+      content: "";
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent, var(--panel-strong));
+    }
+
+    .knowledge-preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .knowledge-preview-title {
+      margin: 0;
+      color: var(--text-soft);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .memory-link {
+      color: var(--accent-hot);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      letter-spacing: 0.12em;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+
+    .memory-link:hover {
+      text-shadow: 0 0 12px color-mix(in srgb, var(--accent-hot) 50%, transparent);
+    }
+
     .hidden {
       display: none !important;
     }
@@ -1483,6 +1530,10 @@
           <button class="primary-btn" id="knowledgeSaveBtn" type="button">存入世界</button>
         </div>
 
+        <div class="knowledge-preview-head">
+          <p class="knowledge-preview-title">recent fragments</p>
+          <a class="memory-link" href="memory.html" target="_blank" rel="noopener">更多灵感</a>
+        </div>
         <div class="knowledge-list" id="knowledgeList"></div>
       </div>
     </section>
@@ -2806,11 +2857,12 @@ ${state.cards.concept.join(" / ")} · ${state.cards.form} · ${state.cards.genre
         return;
       }
 
-      knowledgeList.innerHTML = entries.slice().reverse().map((entry) => `
-        <div class="knowledge-item">
+      const recentEntries = entries.slice().reverse().slice(0, 3);
+      knowledgeList.innerHTML = recentEntries.map((entry) => `
+        <div class="knowledge-item compact">
           <strong>${escapeHtml(entry.title)}</strong><br />
           ${escapeHtml(entry.author || "匿名缔造者")} · ${escapeHtml(entry.tags || "未标记")}<br />
-          ${escapeHtml(entry.text.slice(0, 140))}${entry.text.length > 140 ? "..." : ""}
+          ${escapeHtml(entry.text)}
         </div>
       `).join("");
     }
