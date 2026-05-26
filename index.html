@@ -1625,6 +1625,13 @@
       choices: [],
       path: [],
       history: [],
+      storyState: {
+        unresolved: [],
+        objects: [],
+        relations: [],
+        lastDelta: "",
+        branchMemory: ""
+      },
       customInput: null,
       finalStory: null,
       pendingIdea: "",
@@ -1939,41 +1946,54 @@
         return normalizeCardResponse(cards, idea);
       } catch (error) {
         const fallback = drawCards(idea);
-        state.cardOptions = makeFallbackCardOptions(fallback);
+        state.cardOptions = makeFallbackCardOptions(fallback, idea);
         return fallback;
       }
     }
 
     function normalizeCardResponse(cards, idea) {
       const fallback = drawCards(idea);
+      const smart = makeFallbackCardOptions(fallback, idea);
       const drawSeed = seedFrom(`${idea}|${state.theme}|${state.cardDrawNonce || Date.now()}`);
 
       const conceptCandidates = normalizeConceptCandidates(
-        cards.cards?.concept ||
-        cards.candidates?.conceptTags ||
-        cards.conceptCandidates ||
-        [cards.conceptTags || cards.concept || fallback.concept]
+        [
+          ...(ensureArray(cards.cards?.concept)),
+          ...(ensureArray(cards.candidates?.conceptTags)),
+          ...(ensureArray(cards.conceptCandidates)),
+          ...(ensureArray(cards.conceptTags || cards.concept || fallback.concept)),
+          ...smart.concept
+        ]
       );
 
       const formCandidates = normalizeStringCandidates(
-        cards.cards?.form ||
-        cards.candidates?.form ||
-        cards.formCandidates ||
-        [cards.form || fallback.form]
+        [
+          ...(ensureArray(cards.cards?.form)),
+          ...(ensureArray(cards.candidates?.form)),
+          ...(ensureArray(cards.formCandidates)),
+          ...(ensureArray(cards.form || fallback.form)),
+          ...smart.form
+        ]
       );
 
       const genreCandidates = normalizeStringCandidates(
-        cards.cards?.genre ||
-        cards.candidates?.genre ||
-        cards.genreCandidates ||
-        [cards.genre || fallback.genre]
+        [
+          ...(ensureArray(cards.cards?.genre)),
+          ...(ensureArray(cards.candidates?.genre)),
+          ...(ensureArray(cards.genreCandidates)),
+          ...(ensureArray(cards.genre || fallback.genre)),
+          ...smart.genre
+        ]
       );
 
       const styleCandidates = normalizeStringCandidates(
-        cards.cards?.style ||
-        cards.candidates?.style ||
-        cards.styleCandidates ||
-        [cards.style || fallback.style]
+        [
+          ...(ensureArray(cards.cards?.style)),
+          ...(ensureArray(cards.candidates?.style)),
+          ...(ensureArray(cards.styleCandidates)),
+          ...(ensureArray(cards.style || fallback.style)),
+          ...smart.style
+        ]
       );
 
       state.cardOptions = {
@@ -1993,12 +2013,83 @@
         form: selectedForm,
         genre: selectedGenre,
         style: selectedStyle,
+        analysis: cards.analysis || null,
+        text_generation_unit: normalizeClientUnit(cards.text_generation_unit || cards.ontologyUnit || cards.analysis?.text_generation_unit, {
+          idea,
+          concept: selectedConcept,
+          form: selectedForm,
+          genre: selectedGenre,
+          style: selectedStyle
+        }),
+        narrativePlan: normalizeClientPlan(cards.narrativePlan || cards.narrative_plan, idea, selectedConcept),
         explanations: cards.explanations || {
           conceptTags: formatAnalysisSummary(cards.analysis) || cardCopy.concept,
           form: cardCopy.form,
           genre: cardCopy.genre,
           style: cardCopy.style
         }
+      };
+    }
+
+    function normalizeClientUnit(unit, cards) {
+      const source = unit && typeof unit === "object" ? unit : {};
+      return {
+        ...source,
+        user_idea: source.user_idea || cards.idea,
+        text_category: {
+          ...(source.text_category || {}),
+          primary: source.text_category?.primary || inferClientTextCategory(cards.form),
+          secondary: source.text_category?.secondary || "数字交互文本"
+        },
+        form: {
+          ...(source.form || {}),
+          primary: source.form?.primary || cards.form,
+          secondary: source.form?.secondary || inferClientSecondaryForm(cards.form, cards.idea)
+        },
+        genre: {
+          ...(source.genre || {}),
+          primary: source.genre?.primary || cards.genre,
+          secondary: source.genre?.secondary || cards.concept?.[0] || "",
+          core_desire: source.genre?.core_desire || inferClientDesire(cards.idea),
+          core_conflict: source.genre?.core_conflict || inferClientConflict(cards.idea),
+          core_emotion: source.genre?.core_emotion || inferClientEmotion(cards.idea)
+        },
+        structure: source.structure || inferClientStructure(cards.idea, cards.form),
+        technique: Array.isArray(source.technique) && source.technique.length ? source.technique : inferClientTechniques(cards.form),
+        style: source.style || {
+          aesthetic: [cards.style, inferClientAesthetic(cards.idea)].filter(Boolean),
+          language: { explanation_level: "低", sensory_density: "中", abstraction: "中低" },
+          rhythm: /工作|焦虑|不顺|累|失眠/.test(cards.idea) ? "迟滞、断续" : "轻微断裂",
+          intensity: "中"
+        },
+        media_texture: source.media_texture || {
+          source_texture: inferClientSecondaryForm(cards.form, cards.idea),
+          format_markers: inferClientFormatMarkers(cards.form),
+          degradation_markers: ["缺句", "错位时间"]
+        },
+        interaction_mechanism: source.interaction_mechanism || {
+          choice_types: ["行动驱动", "信息驱动", "情感驱动", "文本反馈"],
+          state_effects: ["物件状态变化", "关系距离变化", "信息顺序变化"]
+        },
+        generation_constraints: source.generation_constraints || {
+          length: "260-520字",
+          options: "2-4",
+          must_include: ["用户原始情境", "具体物象", "未解决缺口"],
+          must_avoid: ["重复选项", "总结式哲理", "重启故事"]
+        }
+      };
+    }
+
+    function normalizeClientPlan(plan, idea, concept) {
+      const source = plan && typeof plan === "object" ? plan : {};
+      return {
+        ...source,
+        core_desire: source.core_desire || inferClientDesire(idea),
+        core_conflict: source.core_conflict || inferClientConflict(idea),
+        core_emotion: source.core_emotion || inferClientEmotion(idea),
+        scene_anchor: source.scene_anchor || extractClientAnchor(idea),
+        information_gap: source.information_gap || `为什么“${extractClientAnchor(idea)}”会被保存成一条小径`,
+        state_delta: source.state_delta || `下一轮必须改变${concept?.[0] || "最初念头"}的身份或位置`
       };
     }
 
@@ -2088,16 +2179,165 @@
       return [value];
     }
 
-    function makeFallbackCardOptions(fallback) {
+    function deriveIdeaSignals(idea) {
+      const text = String(idea || "");
       return {
-        concept: [
-          fallback.concept,
-          ["城市幽灵", fallback.concept[1] || "往日回响", "创伤记忆"],
-          ["私人梦路", "童年梦核", "后室"]
-        ],
-        form: [fallback.form, "纪实档案", "现代诗"],
-        genre: [fallback.genre, "梦核", "怪谈"],
-        style: [fallback.style, "实验小说", "存在主义"]
+        work: /工作|上班|老板|同事|ddl|截止|项目|任务|完成|迟到|加班|简历|面试/.test(text),
+        relationship: /喜欢|爱|恋|分手|暧昧|聊天|说话|见面|关系|朋友|亲密|告白|错过/.test(text),
+        delay: /不顺|来不及|拖延|按时|时间|时机|迟|慢|错过|失约|卡住|困|累/.test(text),
+        message: /消息|短信|微信|聊天|邮件|来信|电话|语音|回复|说话/.test(text),
+        memory: /记忆|以前|小时候|童年|过去|往日|旧|回忆|忘记|想起/.test(text),
+        dream: /梦|睡|醒|失眠|房间|后室|楼梯|雾|夜/.test(text),
+        city: /城市|街|路|地铁|公交|楼道|便利店|公司|出租屋|电梯|小区/.test(text),
+        evidence: /档案|线索|调查|证据|编号|记录|手册|展览|照片|监控/.test(text),
+        fear: /怕|恐怖|惊悚|怪|诡|危险|死|血|逃|追/.test(text),
+        comedy: /好笑|搞笑|荒诞|离谱|尴尬|抽象|发疯|无语|崩溃/.test(text)
+      };
+    }
+
+    function extractClientAnchor(idea) {
+      const text = String(idea || "").trim();
+      const quoted = text.match(/[“"「『](.+?)[”"」』]/);
+      if (quoted) return quoted[1].slice(0, 18);
+      const useful = text
+        .split(/[，。！？；、\s]+/)
+        .map((part) => part.trim())
+        .filter((part) => part.length >= 2 && !/说实话|例如|然后|但是|这个|那个/.test(part));
+      return (useful[0] || text || "最初念头").slice(0, 18);
+    }
+
+    function inferClientTextCategory(form) {
+      if (/诗/.test(form)) return "诗歌";
+      if (/档案|报告|纪实|笔录|记录/.test(form)) return "非虚构";
+      if (/软件|系统|日志|聊天|对话/.test(form)) return "数字交互文本";
+      if (/草稿|备忘|日记|清单/.test(form)) return "复合文本";
+      return "小说";
+    }
+
+    function inferClientSecondaryForm(form, idea) {
+      if (/未发送|聊天|消息|说话|喜欢/.test(`${form}${idea}`)) return "未发送草稿";
+      if (/工作|完成|按时|任务|不顺/.test(idea)) return "未完成清单";
+      if (/档案|纪实|记录/.test(form)) return "调查摘录";
+      if (/梦|睡|醒/.test(idea)) return "梦境记录";
+      if (/日记|备忘/.test(form)) return "私人备忘录";
+      if (/软件|系统/.test(form)) return "异常日志";
+      return "文本残片";
+    }
+
+    function inferClientDesire(idea) {
+      const signals = deriveIdeaSignals(idea);
+      if (signals.work && signals.relationship) return "让失控的日程和错位的关系重新被听见";
+      if (signals.relationship) return "靠近那句迟迟没有对上时机的话";
+      if (signals.work) return "把无法完成的生活重新拆解到可处理的尺度";
+      if (signals.memory) return "确认一段旧记忆为什么重新返回";
+      return `弄清“${extractClientAnchor(idea)}”究竟想把人带到哪里`;
+    }
+
+    function inferClientConflict(idea) {
+      const signals = deriveIdeaSignals(idea);
+      if (signals.work && signals.relationship) return "外部效率要求与内部情感时差互相挤压";
+      if (signals.relationship) return "想靠近的人与说出口的时机始终错位";
+      if (signals.work) return "完成工作的秩序正在被疲惫和拖延腐蚀";
+      if (signals.dream) return "梦境证词与清醒生活无法对齐";
+      return "现实解释与异常经验互相抵触";
+    }
+
+    function inferClientEmotion(idea) {
+      const signals = deriveIdeaSignals(idea);
+      if (signals.work && signals.relationship) return "疲惫、羞耻、想被理解";
+      if (signals.relationship) return "犹疑、期待、错过后的尴尬";
+      if (signals.work) return "焦虑、迟滞、轻微自责";
+      if (signals.fear) return "警觉、不安、压迫";
+      return "好奇、迟疑、被召回";
+    }
+
+    function inferClientStructure(idea, form) {
+      return {
+        temporal: /时间|时机|迟|按时|错过/.test(idea) ? "错位时间" : "断裂时间",
+        causal: /档案|纪实|犯罪|调查/.test(form) ? "证据链因果" : "情绪因果",
+        plot: /工作|关系|喜欢|完成/.test(idea) ? "日常压力逐步异化" : "追寻结构",
+        informational: "先暴露症状，后暴露原因",
+        spatial: /城市|公司|楼道|地铁|出租屋/.test(idea) ? "城市日常空间" : "阈限空间"
+      };
+    }
+
+    function inferClientTechniques(form) {
+      if (/档案|纪实/.test(form)) return ["材料拼贴", "证词互相指认", "低解释度附注"];
+      if (/聊天|软件|系统/.test(form)) return ["界面转录", "异常回执", "信息缺省"];
+      if (/诗/.test(form)) return ["短行跳接", "重复变奏", "留白"];
+      if (/日记|草稿|备忘|清单/.test(form)) return ["自我修正", "日期残留", "私语式旁白"];
+      return ["限知视角", "动作细节", "回望"];
+    }
+
+    function inferClientAesthetic(idea) {
+      const signals = deriveIdeaSignals(idea);
+      if (signals.work && signals.relationship) return "生活偏航";
+      if (signals.comedy) return "冷幽默";
+      if (signals.fear) return "低温惊悚";
+      if (signals.memory) return "旧物微光";
+      return "梦核现实";
+    }
+
+    function inferClientFormatMarkers(form) {
+      if (/清单/.test(form)) return ["待办项", "划掉的空格"];
+      if (/草稿/.test(form)) return ["未发送时间", "删除痕迹"];
+      if (/档案|纪实/.test(form)) return ["编号", "附注"];
+      if (/聊天|软件|系统/.test(form)) return ["时间戳", "回执"];
+      if (/日记|备忘/.test(form)) return ["日期", "边注"];
+      return ["段落残缺"];
+    }
+
+    function makeFallbackCardOptions(fallback, idea = state.idea) {
+      const signals = deriveIdeaSignals(idea);
+      const anchor = extractClientAnchor(idea);
+      const concept = [
+        fallback.concept,
+        signals.work || signals.delay ? ["日程失灵", "工作迟滞", "未完成清单"] : null,
+        signals.relationship ? ["错位亲密", "未发送消息", "关系时差"] : null,
+        signals.memory ? ["往日回响", "私人梦路", "旧物证词"] : null,
+        signals.city ? ["城市幽灵", "通勤裂缝", "楼道回声"] : null,
+        signals.dream ? ["私人梦路", "童年梦核", "后室"] : null,
+        [`${anchor}残响`, "自我校准", "生活偏航"]
+      ].filter(Boolean);
+
+      const form = [
+        fallback.form,
+        signals.message ? "聊天记录" : null,
+        signals.work ? "未完成清单" : null,
+        signals.delay ? "备忘录" : null,
+        signals.relationship ? "未发送草稿" : null,
+        signals.memory ? "日记体" : null,
+        signals.evidence ? "纪实档案" : null,
+        signals.dream ? "梦境记录" : null,
+        "散文体"
+      ].filter(Boolean);
+
+      const genre = [
+        fallback.genre,
+        signals.relationship ? "错位爱情" : null,
+        signals.work ? "职场现实" : null,
+        signals.delay ? "时间怪谈" : null,
+        signals.comedy ? "荒诞喜剧" : null,
+        signals.dream ? "梦核" : null,
+        signals.fear ? "心理惊悚" : null,
+        signals.city ? "都市" : null
+      ].filter(Boolean);
+
+      const style = [
+        fallback.style,
+        signals.work || signals.relationship ? "疲惫现实主义" : null,
+        signals.comedy ? "冷幽默荒诞" : null,
+        signals.fear ? "低解释度怪谈" : null,
+        signals.memory ? "克制私语" : null,
+        "实验小说",
+        "存在主义"
+      ].filter(Boolean);
+
+      return {
+        concept: normalizeConceptCandidates(concept).slice(0, 5),
+        form: normalizeStringCandidates(form).slice(0, 5),
+        genre: normalizeStringCandidates(genre).slice(0, 5),
+        style: normalizeStringCandidates(style).slice(0, 5)
       };
     }
 
@@ -2111,6 +2351,7 @@
 
     function drawCards(idea) {
       const seed = seedFrom(idea);
+      const smart = makeFallbackCardOptions({ concept: pick(fallbackDecks.tags, seed), form: pick(fallbackDecks.forms, seed, 2), genre: pick(fallbackDecks.genres, seed, 4), style: pick(fallbackDecks.styles, seed, 6) }, idea);
       let tagSet = pick(fallbackDecks.tags, seed);
 
       if (/梦|睡|醒|夜|房间/.test(idea)) {
@@ -2126,20 +2367,20 @@
       }
 
       return {
-        concept: tagSet,
-        form: pick(fallbackDecks.forms, seed, 2),
-        genre: /梦|醒|睡/.test(idea) ? "梦核" : pick(fallbackDecks.genres, seed, 4),
-        style: pick(fallbackDecks.styles, seed, 6),
+        concept: smart.concept[(seed + 1) % smart.concept.length] || tagSet,
+        form: smart.form[(seed + 2) % smart.form.length] || pick(fallbackDecks.forms, seed, 2),
+        genre: smart.genre[(seed + 3) % smart.genre.length] || (/梦|醒|睡/.test(idea) ? "梦核" : pick(fallbackDecks.genres, seed, 4)),
+        style: smart.style[(seed + 4) % smart.style.length] || pick(fallbackDecks.styles, seed, 6),
         explanations: null
       };
     }
 
     function renderCards() {
       const cards = [
-        ["concept", "TYPE TAGS", state.cards.concept.join(" / "), state.cards.explanations?.conceptTags || cardCopy.concept],
-        ["form", "FORM", state.cards.form, state.cards.explanations?.form || cardCopy.form],
-        ["genre", "GENRE", state.cards.genre, state.cards.explanations?.genre || cardCopy.genre],
-        ["style", "VOICE", state.cards.style, state.cards.explanations?.style || cardCopy.style]
+        ["concept", "TYPE TAGS", state.cards.concept.join(" / "), getCardExplanation("concept")],
+        ["form", "FORM", state.cards.form, getCardExplanation("form")],
+        ["genre", "GENRE", state.cards.genre, getCardExplanation("genre")],
+        ["style", "VOICE", state.cards.style, getCardExplanation("style")]
       ];
 
       cardGrid.innerHTML = cards.map((card, index) => {
@@ -2207,12 +2448,37 @@
         state.cards[category] = value;
       }
 
+      state.cards.text_generation_unit = normalizeClientUnit(state.cards.text_generation_unit, {
+        idea: state.idea,
+        concept: state.cards.concept,
+        form: state.cards.form,
+        genre: state.cards.genre,
+        style: state.cards.style
+      });
+      state.cards.narrativePlan = normalizeClientPlan(state.cards.narrativePlan, state.idea, state.cards.concept);
+
       state.cards.explanations = {
         ...(state.cards.explanations || {}),
         [category === "concept" ? "conceptTags" : category]: "这张卡片来自你的选择，将直接影响后续文本的推理方向。"
       };
 
       renderCards();
+    }
+
+    function getCardExplanation(category) {
+      const unit = state.cards?.text_generation_unit || {};
+      const plan = state.cards?.narrativePlan || {};
+      if (category === "concept") {
+        return state.cards.explanations?.conceptTags || `这组标签把念头钉在“${plan.scene_anchor || extractClientAnchor(state.idea)}”附近，冲突来自：${plan.information_gap || inferClientConflict(state.idea)}。`;
+      }
+      if (category === "form") {
+        const texture = unit.media_texture?.source_texture || inferClientSecondaryForm(state.cards.form, state.idea);
+        return state.cards.explanations?.form || `文本会以“${texture}”显影，不再只是普通叙述；格式会保留缺句、记录或草稿感。`;
+      }
+      if (category === "genre") {
+        return state.cards.explanations?.genre || `类型核心不是装饰，而是把“${unit.genre?.core_conflict || inferClientConflict(state.idea)}”推成情节压力。`;
+      }
+      return state.cards.explanations?.style || `语言会偏向${unit.style?.rhythm || "断续节奏"}，避免直白总结，让情绪从动作和物件里露出来。`;
     }
 
     function matchLength(value) {
@@ -2255,6 +2521,13 @@
       state.turn = 0;
       state.path = [];
       state.history = [];
+      state.storyState = {
+        unresolved: [],
+        objects: [],
+        relations: [],
+        lastDelta: "",
+        branchMemory: ""
+      };
       state.finalStory = null;
 
       const opening = await generateOpening();
@@ -2262,6 +2535,7 @@
       state.paragraphs = [opening.text || opening.scene || openingParagraph()];
       state.choices = normalizeChoices(opening.choices || opening.options || makeChoices());
       state.customInput = normalizeCustomInput(opening.customInput);
+      applyStoryState(opening);
 
       styleMark.textContent = state.cards.style;
 
@@ -2279,6 +2553,7 @@
           cards: state.cards,
           level: state.level,
           theme: state.theme,
+          storyState: state.storyState,
           knowledgeBase: getKnowledgeContext(),
           instruction: "生成必须严格围绕用户 idea，不得套用通用模板；先根据体裁/类型/流派决定叙事视角和文本形态；选项数量根据情节需要决定。"
         });
@@ -2298,45 +2573,66 @@
 
     function makeChoices() {
       const idea = state.idea;
-      const tag = state.cards?.concept?.[state.turn % state.cards.concept.length] || "那个念头";
+      const signals = deriveIdeaSignals(idea);
+      const unit = state.cards?.text_generation_unit || {};
+      const plan = state.cards?.narrativePlan || {};
+      const anchor = state.storyState.objects.at(-1) || plan.scene_anchor || extractClientAnchor(idea);
+      const gap = state.storyState.unresolved.at(-1) || plan.information_gap || inferClientConflict(idea);
+      const form = state.cards?.form || unit.form?.primary || "";
+      const choices = [];
 
-      if (/信|来信|消息|短信|邮件/.test(idea)) {
-        return [
-          `拆开那封与“${tag}”有关的信。`,
-          "先检查信封背面是否有第二层文字。",
-          "把信放回原处，观察世界因此发生的变化。"
-        ];
+      if (signals.work) {
+        choices.push({
+          label: formatClientChoice(form, "把今天没有完成的部分拆成三条异常记录"),
+          description: "改变事件的因果顺序。"
+        });
       }
 
-      if (/便利店|商店|货架/.test(idea)) {
-        return [
-          "走向最深处那排没有标价的货架。",
-          "询问收银员为什么店外一直没有天亮。",
-          "拿起一件与你最初念头有关的商品。"
-        ];
+      if (signals.relationship) {
+        choices.push({
+          label: formatClientChoice(form, "保留那句没对上时机的话，不立刻解释"),
+          description: "改变人物之间的距离。"
+        });
       }
 
-      if (/梦|睡|醒/.test(idea)) {
-        return [
-          "确认自己是否真的还在梦里。",
-          "跟随梦中反复出现的声音。",
-          "寻找能让自己醒来的物件。"
-        ];
+      if (signals.message) {
+        choices.push({
+          label: formatClientChoice(form, "调出最后一条未发送消息的残稿"),
+          description: "让文本转向证据或草稿。"
+        });
       }
 
-      if (/水|河|海|雨|湖/.test(idea)) {
-        return [
-          "把手伸进水面，摸索底下的东西。",
-          "沿着水流反方向走。",
-          "询问倒影为什么比你先一步行动。"
-        ];
+      if (signals.delay) {
+        choices.push({
+          label: formatClientChoice(form, `追查“${anchor}”为什么总是慢半拍出现`),
+          description: "改变时间规则。"
+        });
       }
 
-      return [
-        `靠近与“${tag}”有关的异常。`,
-        "停下来，听这个世界先说话。",
-        "把最初的念头再低声说一遍。"
-      ];
+      choices.push(
+        {
+          label: formatClientChoice(form, `检查“${anchor}”背后被删掉的细节`),
+          description: "补出一个信息缺口。"
+        },
+        {
+          label: formatClientChoice(form, `承认“${gap}”正在影响下一段文本`),
+          description: "让情绪成为推进原因。"
+        },
+        {
+          label: formatClientChoice(form, "让下一段换成更像材料、草稿或回执的形态"),
+          description: "改变文本形式。"
+        }
+      );
+
+      return mergeDynamicChoices([], choices).slice(0, state.turn === 0 ? 3 : 4);
+    }
+
+    function formatClientChoice(form, label) {
+      if (/档案|纪实|记录|报告/.test(form)) return `调取：${label}`;
+      if (/软件|系统|聊天|对话/.test(form)) return `输入：${label}`;
+      if (/日记|备忘|草稿|清单/.test(form)) return `写下：${label}`;
+      if (/现代诗|诗/.test(form)) return `留下一行：${label}`;
+      return label;
     }
 
     async function choose(choice) {
@@ -2347,6 +2643,7 @@
         paragraphs: [...state.paragraphs],
         path: [...state.path],
         choices: [...state.choices],
+        storyState: JSON.parse(JSON.stringify(state.storyState)),
         customInput: state.customInput
       });
 
@@ -2358,6 +2655,7 @@
       const step = await generateStoryStep(choiceText);
 
       state.paragraphs.push(step.text || step.scene || nextParagraph(choiceText));
+      applyStoryState(step, choiceText);
 
       if (step.shouldEnd || state.turn >= maxTurnsByLevel() || /收束|结束|浮出水面/.test(choiceText)) {
         await renderResult();
@@ -2387,6 +2685,7 @@
           theme: state.theme,
           path: state.path,
           paragraphs: state.paragraphs,
+          storyState: state.storyState,
           selectedChoice: choice,
           turn: state.turn,
           knowledgeBase: getKnowledgeContext(),
@@ -2422,7 +2721,20 @@
         })
         .slice(0, 4);
 
-      return normalizedChoices.length ? normalizedChoices : makeChoices();
+      const repaired = mergeDynamicChoices(normalizedChoices, makeChoices()).slice(0, 4);
+      return repaired.length ? repaired : makeChoices();
+    }
+
+    function mergeDynamicChoices(primary, fallback) {
+      const result = [];
+      [...primary, ...fallback].forEach((choice) => {
+        const item = typeof choice === "string" ? { label: choice, description: "" } : choice;
+        const normalized = compactText(item.label);
+        if (!normalized) return;
+        if (result.some((existing) => areSimilarText(compactText(existing.label), normalized))) return;
+        result.push(item);
+      });
+      return result;
     }
 
     function normalizeCustomInput(custom) {
@@ -2473,6 +2785,35 @@
     function nextParagraph(choice) {
       const tag = state.cards.concept[state.turn % state.cards.concept.length] || "异常";
       return fallbackParagraphByForm("step", tag, choice);
+    }
+
+    function applyStoryState(payload, selectedChoice = "") {
+      if (!payload || typeof payload !== "object") return;
+      const update = payload.state_update || {};
+      const callbackLines = ensureArray(payload.callbackLines).filter(Boolean);
+      const text = String(payload.text || "");
+      const quoted = [...text.matchAll(/[“"「『](.+?)[”"」』]/g)].map((match) => match[1]).slice(-3);
+
+      state.storyState = {
+        ...state.storyState,
+        branchMemory: payload.branchMemory || update.branchMemory || state.storyState.branchMemory,
+        lastDelta: ensureArray(update.changed).join("、") || selectedChoice || state.storyState.lastDelta,
+        unresolved: uniqueDisplayStrings([
+          ...state.storyState.unresolved,
+          ...callbackLines,
+          payload.atmosphere,
+          payload.plotDraw
+        ]).slice(-6),
+        objects: uniqueDisplayStrings([
+          ...state.storyState.objects,
+          ...quoted,
+          extractClientAnchor(selectedChoice || state.idea)
+        ]).slice(-6),
+        relations: uniqueDisplayStrings([
+          ...state.storyState.relations,
+          update.relationship || update.relation || ""
+        ]).slice(-4)
+      };
     }
 
     function renderStory() {
@@ -2531,6 +2872,7 @@
       state.paragraphs = previous.paragraphs;
       state.path = previous.path;
       state.choices = previous.choices;
+      state.storyState = previous.storyState || state.storyState;
       state.customInput = previous.customInput || null;
 
       renderStory();
@@ -2624,6 +2966,7 @@
           theme: state.theme,
           path: state.path,
           paragraphs: state.paragraphs,
+          storyState: state.storyState,
           knowledgeBase: getKnowledgeContext(),
           instruction: "最终文本必须忠实整合用户 idea、路径选择、知识库和已生成正文，并保持已选体裁的文本形态，不得突然偏离主题或退回普通第二人称。"
         });
@@ -2667,6 +3010,31 @@
       const genre = state.cards?.genre || "";
       const style = state.cards?.style || "";
       const idea = state.idea || "这个念头";
+      const signals = deriveIdeaSignals(idea);
+      const anchor = state.storyState.objects.at(-1) || extractClientAnchor(choice || idea);
+      const gap = state.storyState.unresolved.at(-1) || inferClientConflict(idea);
+
+      if (kind === "step") {
+        if (/日记|备忘|草稿|清单/.test(form)) {
+          return `我把刚才那条选择写下来：${choice}。\n写到一半，页面左侧多出一个小小的空格，像待办事项前面没有被勾选的方框。${anchor}没有解释自己，只把“${gap}”推回桌面。于是这一次，故事不再往外跑，它开始检查我为什么总在同一个地方慢下来。`;
+        }
+
+        if (/档案|纪实|记录|报告/.test(form)) {
+          return `补充记录 ${String(state.turn).padStart(2, "0")}：路径选择“${choice}”已归档。\n该选择没有生成新的现场，而是改写了旧现场的证词顺序：${anchor}被移到材料首页，${gap}成为主要疑点。记录员暂不作结论，只标出一处矛盾：当事人越想把生活整理清楚，文本越像一份被反复涂改的证据。`;
+        }
+
+        if (/软件|系统|聊天|对话/.test(form)) {
+          return `[PATH_INPUT]\n${choice}\n\n[STATE_PATCH]\nanchor=${anchor}\nconflict=${gap}\n\n[WORLD_REPLY]\n系统没有新建地图，而是打开上一轮缓存：一条未发送的句子、一项逾期任务、一个没有对上时机的回应被放进同一张表。它们互相引用，证明这条路不是拼接，而是在同一个故障里继续运行。`;
+        }
+
+        if (/现代诗|诗/.test(form)) {
+          return `${choice}\n被写成下一行\n\n${anchor}没有移动\n只是把迟到的影子\n压在纸背\n\n${gap}\n像一枚没有勾选的方框\n在句末轻轻发亮`;
+        }
+
+        if (signals.work || signals.relationship) {
+          return `选择发生后，故事没有换一个场景逃开。${anchor}仍在原处，只是它旁边多了一张很薄的清单：没完成的工作、没说准的话、没来得及解释的疲惫。${choice}让这些东西第一次被放在同一条因果线上。接下来要处理的不是“异常”本身，而是${gap}怎样一点点把日常推歪。`;
+        }
+      }
 
       if (form === "日记体") {
         if (kind === "opening") return `2006.04.14，14:10。\n我把“${idea}”写在纸页边缘，墨水没有干，${tag}却先从字缝里渗出来。它不像灵感，更像一条很久以前就埋在我房间里的路。`;

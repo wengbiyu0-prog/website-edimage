@@ -379,6 +379,26 @@ ${knowledge}
 
 只返回 JSON：
 {
+  "text_generation_unit": {
+    "text_category": { "primary": "", "secondary": "" },
+    "genre": { "primary": "", "secondary": "", "core_desire": "", "core_conflict": "", "core_emotion": "" },
+    "form": { "primary": "", "secondary": "" },
+    "structure": { "temporal": "", "causal": "", "plot": "", "informational": "", "spatial": "" },
+    "technique": ["", ""],
+    "style": { "aesthetic": ["", ""], "language": {}, "rhythm": "", "intensity": "" },
+    "cultural_modifier": { "region": "", "period": "", "social_context": [], "retrieval_need": false },
+    "media_texture": { "source_texture": "", "format_markers": [], "degradation_markers": [] },
+    "interaction_mechanism": { "choice_types": ["", ""], "state_effects": ["", ""] },
+    "generation_constraints": { "length": "", "options": "", "must_include": ["", ""], "must_avoid": ["", ""] }
+  },
+  "narrativePlan": {
+    "core_desire": "",
+    "core_conflict": "",
+    "core_emotion": "",
+    "scene_anchor": "",
+    "information_gap": "",
+    "state_delta": ""
+  },
   "conceptTags": ["", "", ""],
   "form": "",
   "genre": "",
@@ -440,10 +460,13 @@ ${narrativeContract}
 8. 输出 branchMemory，用一句短语记录这一轮分支的核心状态，供后续回望。
 9. 正文第一句必须体现本轮体裁，不许以“你醒来/你发现/你走进/你站在”这种默认互动小说句式开头，除非 narrativeMode 明确选择第二人称沉浸模式。
 10. choices 的数量和文本必须根据当前情节点推理生成；不要每轮都给 3 个，不要把选项写成通用任务。
+11. 必须使用抽卡结果中的 text_generation_unit 与 narrativePlan；如果缺失，也要现场补全，不得只依据 form/genre/style 四个表层字段。
 
 只返回 JSON：
 {
   "narrativeMode": "",
+  "text_generation_unit": {},
+  "state_update": {},
   "text": "",
   "choices": ["", "", ""],
   "customInput": {
@@ -476,6 +499,9 @@ ${JSON.stringify(payload.path)}
 已有正文：
 ${JSON.stringify(payload.paragraphs)}
 
+当前故事状态：
+${JSON.stringify(payload.storyState || {})}
+
 用户刚刚选择：
 ${payload.selectedChoice}
 
@@ -506,10 +532,15 @@ ${narrativeContract}
 13. choices 必须由本轮 text 的具体情境长出来；数量可以是 1、2、3 或 4，按沉浸体验决定。
 14. 严禁把用户路径逐条复述成“补充材料/当事路径选择为……”。已有正文只用于回望，不允许整段复制、同义改写或列表式重播。
 15. text 必须写“新发生的叙事”，而不是对用户选择和历史路径做摘要。
+16. 必须输出 state_update，说明本轮改变了哪些角色、空间、物件、信息、情绪或文本形式参数。
+17. 新文本必须承认并继承“当前故事状态”中的未解决问题、物件、关系和上一轮变化；不能像多个不相干片段拼接。
+18. 禁止使用“当……成为事实，人物之间……”这类模板句；每一轮都要出现一个具体新增物件、动作或信息差。
 
 只返回 JSON：
 {
   "narrativeMode": "",
+  "text_generation_unit": {},
+  "state_update": {},
   "text": "",
   "choices": ["", "", ""],
   "customInput": {
@@ -586,17 +617,107 @@ function sanitizeGeneratedPayload(stage, parsed, payload) {
       genre: uniqueStrings(candidates.genre || parsed.genre),
       style: uniqueStrings(candidates.style || parsed.style)
     };
+
+    parsed.text_generation_unit = normalizeTextGenerationUnit(parsed.text_generation_unit, payload, parsed);
+    parsed.narrativePlan = normalizeNarrativePlan(parsed.narrativePlan, parsed.text_generation_unit, payload);
   }
 
   if (stage === "story_opening" || stage === "story_step") {
-    parsed.choices = uniqueChoiceLabels(parsed.choices);
+    parsed.text_generation_unit = normalizeTextGenerationUnit(parsed.text_generation_unit || payload.cards?.text_generation_unit, payload, parsed);
+    parsed.state_update = parsed.state_update || buildFallbackStateUpdate(payload, parsed);
+    parsed.choices = repairChoices(uniqueChoiceLabels(parsed.choices), payload, parsed, stage);
 
     if (stage === "story_step") {
-      parsed.text = trimRepeatedStoryText(parsed.text, payload);
+      parsed.text = enforceContinuityText(trimRepeatedStoryText(parsed.text, payload), payload, parsed);
     }
   }
 
   return parsed;
+}
+
+function normalizeTextGenerationUnit(unit, payload, parsed = {}) {
+  const cards = payload.cards || {};
+  const concept = Array.isArray(cards.concept) ? cards.concept : parsed.conceptTags || [];
+  const idea = String(payload.idea || "").trim();
+  const textCategory = unit?.text_category || {};
+  const genre = unit?.genre || {};
+  const form = unit?.form || {};
+
+  return {
+    ...(unit && typeof unit === "object" ? unit : {}),
+    user_idea: unit?.user_idea || idea,
+    text_category: {
+      primary: textCategory.primary || inferTextCategory(cards.form || parsed.form),
+      secondary: textCategory.secondary || "数字交互文本"
+    },
+    genre: {
+      primary: genre.primary || cards.genre || parsed.genre || "梦核",
+      secondary: genre.secondary || concept[0] || "私人梦路",
+      core_desire: genre.core_desire || "确认最初念头背后真正想抵达的东西",
+      core_conflict: genre.core_conflict || "现实解释与异常经验互相抵触",
+      core_emotion: genre.core_emotion || "不安、好奇、被召回"
+    },
+    form: {
+      primary: form.primary || cards.form || parsed.form || "散文体",
+      secondary: form.secondary || inferSecondaryForm(cards.form || parsed.form)
+    },
+    structure: unit?.structure || {
+      temporal: "断裂时间",
+      causal: /犯罪|悬疑|调查|档案/.test(`${cards.genre}${cards.style}${cards.form}`) ? "强因果结构" : "弱因果结构",
+      plot: "追寻结构",
+      informational: "信息缺失结构",
+      spatial: "阈限空间"
+    },
+    technique: Array.isArray(unit?.technique) && unit.technique.length ? unit.technique : ["限知视角", "留白", "重复变奏"],
+    style: unit?.style || {
+      aesthetic: [cards.style || parsed.style || "克制", "诡谲"],
+      language: { sentence_length: "中短句", explanation_level: "低", sensory_density: "中高" },
+      rhythm: "断裂",
+      intensity: "中"
+    },
+    cultural_modifier: unit?.cultural_modifier || {
+      region: "当代中文语境",
+      period: "移动互联网时期",
+      social_context: ["城市流动环境"],
+      retrieval_need: false
+    },
+    media_texture: unit?.media_texture || {
+      source_texture: inferMediaTexture(cards.form || parsed.form),
+      format_markers: ["时间标记"],
+      degradation_markers: ["缺句"]
+    },
+    interaction_mechanism: unit?.interaction_mechanism || {
+      choice_types: ["行动驱动", "信息驱动", "解释驱动"],
+      state_effects: ["空间状态变化", "已知信息变化", "情绪距离变化"]
+    },
+    generation_constraints: unit?.generation_constraints || {
+      length: "260-520字",
+      options: "2-4",
+      must_include: ["具体物象", "信息缺口", "情绪变化"],
+      must_avoid: ["结尾升华", "重复选项", "空泛抒情"]
+    }
+  };
+}
+
+function normalizeNarrativePlan(plan, unit, payload) {
+  const idea = String(payload.idea || "").trim();
+  return {
+    ...(plan && typeof plan === "object" ? plan : {}),
+    core_desire: plan?.core_desire || unit.genre.core_desire,
+    core_conflict: plan?.core_conflict || unit.genre.core_conflict,
+    core_emotion: plan?.core_emotion || unit.genre.core_emotion,
+    scene_anchor: plan?.scene_anchor || extractIdeaAnchor(idea),
+    information_gap: plan?.information_gap || "某个来源、身份或时间顺序没有被解释",
+    state_delta: plan?.state_delta || "下一轮必须改变空间、物件、信息或关系中的至少一项"
+  };
+}
+
+function buildFallbackStateUpdate(payload, parsed) {
+  return {
+    turn: payload.turn || 0,
+    changed: ["known_information", "emotional_distance"],
+    branchMemory: parsed.branchMemory || "本轮生成留下一个未解释的信息缺口"
+  };
 }
 
 function uniqueConceptGroups(value) {
@@ -670,7 +791,66 @@ function trimRepeatedStoryText(text, payload) {
       return !recent.some((old) => old && areTooSimilar(old, normalized));
     });
 
-  return paragraphs.length ? paragraphs.join("\n\n") : cleanText;
+  return paragraphs.length ? paragraphs.join("\n\n") : "";
+}
+
+function enforceContinuityText(text, payload, parsed) {
+  const cleanText = String(text || "").trim();
+  const selected = String(payload.selectedChoice || "").trim();
+  const recentParagraphs = Array.isArray(payload.paragraphs) ? payload.paragraphs.slice(-2) : [];
+  const recent = recentParagraphs.map((item) => normalizeComparableText(item));
+  const normalized = normalizeComparableText(cleanText);
+  const tooShort = cleanText.length < 90;
+  const tooRepeated = recent.some((old) => old && areTooSimilar(old, normalized));
+  const templated = /当[“"].+?[”"]成为事实|补充材料|当事路径选择|不再只是象征|进入了生活的细部/.test(cleanText);
+
+  if (!cleanText || tooShort || tooRepeated || templated) {
+    return buildContinuityFallbackText(payload, parsed);
+  }
+
+  if (selected && !cleanText.includes(selected.slice(0, Math.min(8, selected.length))) && !cleanText.includes(extractIdeaAnchor(selected))) {
+    return `${buildChoiceConsequenceSentence(payload, parsed)}\n\n${cleanText}`;
+  }
+
+  return cleanText;
+}
+
+function buildContinuityFallbackText(payload, parsed) {
+  const cards = payload.cards || {};
+  const unit = normalizeTextGenerationUnit(cards.text_generation_unit || parsed.text_generation_unit, payload, parsed);
+  const form = unit.form.primary || cards.form || "";
+  const selected = String(payload.selectedChoice || "继续").replace(/^自定义[:：]/, "").trim();
+  const anchor = extractCurrentAnchor(payload, parsed);
+  const ideaAnchor = extractIdeaAnchor(payload.idea);
+  const state = payload.storyState || {};
+  const unresolved = Array.isArray(state.unresolved) && state.unresolved.length
+    ? state.unresolved.at(-1)
+    : unit.genre.core_conflict;
+  const object = Array.isArray(state.objects) && state.objects.length ? state.objects.at(-1) : anchor;
+
+  if (/档案|纪实|报告|记录/.test(form)) {
+    return `续档 ${String(payload.turn || 0).padStart(2, "0")}：路径选择“${selected}”没有开启新场景，而是改变了上一份材料的阅读顺序。\n\n${object}被重新标在页眉处，和“${ideaAnchor}”之间出现一条细线。记录员暂时无法证明它们同源，只能补上一条观察：${unresolved}并未消失，而是开始要求当事人给出更具体的时间、地点和责任。`;
+  }
+
+  if (/软件|系统|聊天|对话/.test(form)) {
+    return `[INPUT]\n${selected}\n\n[MEMORY_DIFF]\nanchor=${object}\nissue=${unresolved}\n\n[RENDER]\n上一轮缓存没有被丢弃。系统把“${ideaAnchor}”拆成三项：未完成、未发送、未解释。新的文本从第三项开始，因为它最像一处故障，也最像用户真正没有说完的地方。`;
+  }
+
+  if (/日记|备忘|草稿|清单/.test(form)) {
+    return `我把“${selected}”写在上一页下面，没有另起一页。\n\n这很重要，因为${object}还在那里。它旁边多了一个没有勾选的方框，方框后面写着：${unresolved}。我忽然明白，这条路并不是让我逃离“${ideaAnchor}”，而是逼我看见它怎样把工作、话语和时机拧在一起。`;
+  }
+
+  if (/现代诗|诗/.test(form)) {
+    return `${selected}\n没有把路换掉\n\n${object}\n仍压在上一行\n\n${unresolved}\n从纸背透出来\n像一个没有勾选的空格`;
+  }
+
+  return `${buildChoiceConsequenceSentence(payload, parsed)}\n\n${object}没有离开原来的位置，只是多了一层更具体的重量：${unresolved}。故事因此继续沿着同一条裂缝往下走，工作、关系、时机或记忆中的某一项被轻轻拨动，下一处岔路必须回应这个拨动，而不是重新开始。`;
+}
+
+function buildChoiceConsequenceSentence(payload, parsed) {
+  const selected = String(payload.selectedChoice || "这个选择").replace(/^自定义[:：]/, "").trim();
+  const anchor = extractCurrentAnchor(payload, parsed);
+  return `“${selected}”先改变了${anchor}的解释顺序。`;
 }
 
 function normalizeComparableText(value) {
@@ -696,11 +876,160 @@ function areTooSimilar(a, b) {
   return overlap / new Set(shorter).size > 0.82;
 }
 
+function repairChoices(choices, payload, parsed, stage) {
+  const result = [];
+  const genericPatterns = [
+    /继续(向前|前进|探索|走)/,
+    /靠近.*异常/,
+    /听这个世界/,
+    /低声说一遍/,
+    /确认自己是否/,
+    /寻找.*物件/,
+    /停下来/
+  ];
+
+  for (const choice of choices) {
+    const label = typeof choice === "string"
+      ? choice
+      : choice?.label || choice?.title || choice?.text || choice?.value || "";
+    const normalized = normalizeComparableText(label);
+    if (!normalized) continue;
+    if (genericPatterns.some((pattern) => pattern.test(label))) continue;
+    if (result.some((existing) => areTooSimilar(existing.normalized, normalized))) continue;
+    result.push({ raw: choice, normalized });
+  }
+
+  const desiredCount = stage === "story_opening" ? 3 : 3;
+  for (const fallback of buildOntologyFallbackChoices(payload, parsed)) {
+    if (result.length >= desiredCount) break;
+    const normalized = normalizeComparableText(fallback.label);
+    if (result.some((existing) => areTooSimilar(existing.normalized, normalized))) continue;
+    result.push({ raw: fallback, normalized });
+  }
+
+  return result.map((item) => item.raw).slice(0, 4);
+}
+
+function buildOntologyFallbackChoices(payload, parsed) {
+  const unit = normalizeTextGenerationUnit(payload.cards?.text_generation_unit || parsed.text_generation_unit, payload, parsed);
+  const ideaAnchor = extractIdeaAnchor(payload.idea);
+  const currentAnchor = extractCurrentAnchor(payload, parsed);
+  const objectAnchor = currentAnchor || ideaAnchor;
+  const form = unit.form.primary;
+  const choiceTypes = unit.interaction_mechanism.choice_types || ["行动驱动", "信息驱动", "解释驱动"];
+  const texture = unit.media_texture.source_texture || "文本残片";
+
+  const action = {
+    label: formatChoiceLabel(form, `处理“${objectAnchor}”留下的具体物件`),
+    description: "行动会改变空间或物件状态。"
+  };
+  const information = {
+    label: formatChoiceLabel(form, `调取与“${ideaAnchor}”矛盾的那份记录`),
+    description: "信息顺序会改变下一轮真相版本。"
+  };
+  const emotion = {
+    label: formatChoiceLabel(form, `承认自己对“${objectAnchor}”的迟疑`),
+    description: "情感距离会改变叙述语气。"
+  };
+  const explanation = {
+    label: formatChoiceLabel(form, `把异常解释为${pickExplanation(unit.genre.primary)}而不是巧合`),
+    description: "解释框架会改变类型走向。"
+  };
+  const textFeedback = {
+    label: formatChoiceLabel(form, `让下一段以“${texture}”的格式显影`),
+    description: "文本形式会改变。"
+  };
+
+  const byType = {
+    "行动驱动": action,
+    "信息驱动": information,
+    "情感驱动": emotion,
+    "解释驱动": explanation,
+    "文本反馈": textFeedback,
+    "视角驱动": {
+      label: formatChoiceLabel(form, `换到另一个目击者眼中看“${ideaAnchor}”`),
+      description: "视角会改变可靠性。"
+    },
+    "沉默机制": {
+      label: formatChoiceLabel(form, `暂时不回应“${objectAnchor}”`),
+      description: "沉默会制造缺口。"
+    },
+    "重写机制": {
+      label: formatChoiceLabel(form, `重命名“${objectAnchor}”`),
+      description: "命名会改写记忆状态。"
+    }
+  };
+
+  const selected = choiceTypes.map((type) => byType[type]).filter(Boolean);
+  return [...selected, action, information, emotion, explanation, textFeedback];
+}
+
+function formatChoiceLabel(form, label) {
+  if (/档案|报告|笔录|纪实/.test(form)) return `记录：${label}`;
+  if (/软件|系统|日志|AI|对话/.test(form)) return `输入指令：${label}`;
+  if (/日记|备忘|草稿/.test(form)) return `写下：${label}`;
+  if (/现代诗|诗/.test(form)) return `留下一行：${label}`;
+  return label;
+}
+
+function pickExplanation(genre) {
+  if (/梦|超现实|后室|阈限/.test(genre)) return "梦境滑脱";
+  if (/犯罪|悬疑|调查/.test(genre)) return "被遮蔽的证据";
+  if (/恐怖|怪谈/.test(genre)) return "一条没有来源的禁忌";
+  if (/爱情|家庭|青春/.test(genre)) return "未说出口的关系压力";
+  return "记忆误差";
+}
+
+function extractIdeaAnchor(idea) {
+  const text = String(idea || "").trim();
+  const quoted = text.match(/[“"「『](.+?)[”"」』]/);
+  if (quoted) return quoted[1].slice(0, 18);
+  const parts = text.split(/[，。！？、\s]+/).filter((part) => part.length >= 2);
+  return (parts[0] || text || "最初念头").slice(0, 18);
+}
+
+function extractCurrentAnchor(payload, parsed) {
+  const selected = String(payload.selectedChoice || "").replace(/^自定义[:：]/, "").trim();
+  if (selected) return selected.slice(0, 18);
+  const text = String(parsed.text || "");
+  const quoted = text.match(/[“"「『](.+?)[”"」』]/);
+  if (quoted) return quoted[1].slice(0, 18);
+  const paragraph = Array.isArray(payload.paragraphs) ? payload.paragraphs.at(-1) || "" : "";
+  return extractIdeaAnchor(paragraph);
+}
+
+function inferTextCategory(form) {
+  if (/诗/.test(form)) return "诗歌";
+  if (/档案|报告|笔录|病历|纪实|警方/.test(form)) return "非虚构";
+  if (/系统|软件|AI|日志|数据库|游戏/.test(form)) return "数字交互文本";
+  if (/日记|书信|备忘|草稿|聊天|邮件/.test(form)) return "复合文本";
+  return "小说";
+}
+
+function inferSecondaryForm(form) {
+  if (/日记/.test(form)) return "梦境记录";
+  if (/档案|纪实/.test(form)) return "调查报告";
+  if (/软件|系统/.test(form)) return "系统日志";
+  if (/诗/.test(form)) return "片段札记";
+  return "文本残片";
+}
+
+function inferMediaTexture(form) {
+  if (/日记/.test(form)) return "日记残页";
+  if (/书信/.test(form)) return "私人信件";
+  if (/档案|纪实|报告/.test(form)) return "调查摘录";
+  if (/笔录|警方/.test(form)) return "警方笔录节选";
+  if (/软件|系统|日志/.test(form)) return "系统日志";
+  if (/聊天|对话/.test(form)) return "聊天摘录";
+  return "文本残片";
+}
+
 function buildNarrativeContractPrompt(payload) {
   const cards = payload.cards || {};
   const form = cards.form || "未定体裁";
   const genre = cards.genre || "未定类型";
   const style = cards.style || "未定流派";
+  const unit = cards.text_generation_unit || cards.ontologyUnit || null;
   const tags = Array.isArray(cards.concept)
     ? cards.concept.join("、")
     : Array.isArray(cards.conceptTags)
@@ -713,6 +1042,7 @@ function buildNarrativeContractPrompt(payload) {
 - 当前类型：${genre}
 - 当前流派/文风：${style}
 - 当前标签：${tags || "未定"}
+- 当前十维本体：${unit ? JSON.stringify(unit) : "未提供，必须现场补全"}
 
 执行规则：
 1. 先在心里决定 narrativeMode，再写正文。narrativeMode 必须具体，例如“第一人称日记”“档案摘录与证词拼贴”“软件系统日志与用户对话”“现代诗短行”“第三人称严肃文学”“犯罪悬疑网文强钩子”。
