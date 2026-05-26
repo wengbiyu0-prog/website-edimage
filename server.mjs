@@ -347,7 +347,7 @@ async function handleStoryComplete(req, res) {
 async function buildPrompt(stage, payload) {
   const knowledge = await buildKnowledgePrompt(payload);
   const easter = buildEasterPrompt(payload);
-  const framework = buildGenerationFrameworkPrompt();
+  const framework = `${buildTextualOntologyHarnessPrompt()}\n\n${buildGenerationFrameworkPrompt()}`;
   const narrativeContract = buildNarrativeContractPrompt(payload);
 
   if (stage === "cards") {
@@ -815,6 +815,55 @@ function buildGenerationFrameworkPrompt() {
 5. 知识库召回：优先融合相关文本，保证世界连续性。
 6. 二次回望：主动检查并回收前文线索，增强逻辑连续性。
 7. 最终整合：让正文成为一篇真正可读的小说片段，而不是流程记录。
+`;
+}
+
+function buildTextualOntologyHarnessPrompt() {
+  return `
+EDIMAGE 文本生成本体库 harness：
+这不是标签库，而是互动文本生成的十维参数化推理框架。每次生成都必须先把用户 idea 与当前状态解析成 text_generation_unit，再写正文和选项。
+
+最小工作流：
+1. Ontology Parser：读取 user_idea、当前正文、路径、知识库召回，解析十维参数。
+2. Narrative Planner：用前六维决定文本骨架，用第 7-8 维补情境与媒介质感，用第 9-10 维决定交互和质量边界。
+3. Builder：根据文本形式、结构、技法和风格写正文，不得只套类型标签。
+4. Choice Generator：生成能改变后续参数的分支，混合行动、信息、情感、解释、文本形式，不做伪选择。
+5. Anti-AI Style Gate：删除结尾升华、空泛抽象、模板句式、解释性旁白和重复选项。
+6. Memory Manager：显式保留角色状态、空间状态、物件状态、关系状态、伏笔、用户选择和知识库意象。
+
+十维参数：
+1. text_category 文类/体裁：诗歌、小说、戏剧、散文、非虚构、应用文、数字交互文本、复合文本。它回答文学大类，不等于类型，也不等于文本形式。
+2. genre 类型/类型叙事：爱情、家庭、青春、恐怖、悬疑、犯罪、怪谈、科幻、赛博朋克、奇幻、废土、公路、都市、后室/阈限恐怖、荒诞、超现实、梦核。必须提炼核心欲望、核心冲突、核心情绪、常见陷阱。
+3. form 文本形式：日记、书信、备忘录、未发送草稿、梦境记录、调查报告、病历、警方笔录、实验日志、百科词条、聊天记录、群聊、邮件、语音转文字、论坛帖、系统通知、游戏任务、AI 对话、搜索记录、浏览器历史、GPS 轨迹、监控转录、日志、数据库导出。
+4. structure 叙事结构：时间结构、因果结构、情节结构、信息结构、空间结构、复合结构。用它抵抗流水账。
+5. technique 叙述技法：叙述者机制、视角机制、心理呈现、信息控制、叙事拼接。技法必须服务信息隐藏、错位、感知或歪曲。
+6. style 文学/语言风格：审美、句长、语体、抽象度、情绪外露、感官密度、对话比例、解释程度、修辞、节奏、风格强度。禁止直接模仿名人作家。
+7. cultural_modifier 文化-历史修饰器：地域、时代、社会环境、文化观念。只做情境参数；涉及真实制度、民俗、职业细节时，标记 retrieval_need。
+8. media_texture 文本媒介质感：来源感、格式痕迹、损耗痕迹。每轮最多一种来源感、一到两种格式痕迹、一种损耗痕迹，不能廉价乱码。
+9. interaction_mechanism 交互机制：行动、信息、视角、文本反馈、情感、解释、沉默、重写。它回答用户选择改变什么。
+10. generation_constraints 生成约束：篇幅、视角、选项数量、信息节奏、具体性、连续性、反 AI 味、守门规则。
+
+输出前必须自检：
+- 是否有具体物象、场景、动作或感官锚点。
+- 是否有信息缺口或情绪变化。
+- 用户选择是否真的改变下一轮参数，而不只是换一句按钮文案。
+- 是否避免同质选项、重复选项、过度哲理化、结尾升华、空泛抒情。
+- 是否没有无因重置世界状态。
+
+推荐 text_generation_unit：
+{
+  "user_idea": "",
+  "text_category": { "primary": "", "secondary": "" },
+  "genre": { "primary": "", "secondary": "", "core_desire": "", "core_conflict": "", "core_emotion": "" },
+  "form": { "primary": "", "secondary": "" },
+  "structure": { "temporal": "", "causal": "", "plot": "", "informational": "", "spatial": "" },
+  "technique": [],
+  "style": { "aesthetic": [], "language": {}, "rhythm": "", "intensity": "" },
+  "cultural_modifier": { "region": "", "period": "", "social_context": [], "retrieval_need": false },
+  "media_texture": { "source_texture": "", "format_markers": [], "degradation_markers": [] },
+  "interaction_mechanism": { "choice_types": [], "state_effects": [] },
+  "generation_constraints": { "length": "", "options": "", "must_include": [], "must_avoid": [] }
+}
 `;
 }
 
