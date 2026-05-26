@@ -589,6 +589,9 @@ ${narrativeContract}
 7. 如果路径中出现彩蛋，正文可以用一句极短的异物感痕迹带过，但不要让彩蛋吞掉主线。
 8. 输出 callbacks，概述这篇成稿如何回望前文。
 9. body 必须保持一路选定的体裁格式，不要在终稿里改回普通第二人称互动小说。
+10. body 必须是一次完整重写后的成稿，不允许把正文片段按顺序拼接。
+11. 不允许在 body 中出现“路径选择”“补充材料”“我把刚才那条选择写下来”“用户选择了”“第几处岔路”等过程痕迹。
+12. 如果正文片段之间风格不统一、重复或像模块拼接，你必须主动统一措辞、视角、节奏和叙事因果。
 
 只返回 JSON：
 {
@@ -628,7 +631,7 @@ function sanitizeGeneratedPayload(stage, parsed, payload) {
     parsed.choices = repairChoices(uniqueChoiceLabels(parsed.choices), payload, parsed, stage);
 
     if (stage === "story_step") {
-      parsed.text = enforceContinuityText(trimRepeatedStoryText(parsed.text, payload), payload, parsed);
+      parsed.text = polishStoryStepText(parsed.text, payload);
     }
   }
 
@@ -771,12 +774,11 @@ function uniqueStrings(value) {
   return result.slice(0, 5);
 }
 
-function trimRepeatedStoryText(text, payload) {
+function polishStoryStepText(text, payload) {
   const cleanText = String(text || "").trim();
   if (!cleanText) return cleanText;
 
   const recent = [
-    ...(Array.isArray(payload.path) ? payload.path.slice(-4) : []),
     ...(Array.isArray(payload.paragraphs) ? payload.paragraphs.slice(-2) : [])
   ].map((item) => normalizeComparableText(item));
 
@@ -791,66 +793,7 @@ function trimRepeatedStoryText(text, payload) {
       return !recent.some((old) => old && areTooSimilar(old, normalized));
     });
 
-  return paragraphs.length ? paragraphs.join("\n\n") : "";
-}
-
-function enforceContinuityText(text, payload, parsed) {
-  const cleanText = String(text || "").trim();
-  const selected = String(payload.selectedChoice || "").trim();
-  const recentParagraphs = Array.isArray(payload.paragraphs) ? payload.paragraphs.slice(-2) : [];
-  const recent = recentParagraphs.map((item) => normalizeComparableText(item));
-  const normalized = normalizeComparableText(cleanText);
-  const tooShort = cleanText.length < 90;
-  const tooRepeated = recent.some((old) => old && areTooSimilar(old, normalized));
-  const templated = /当[“"].+?[”"]成为事实|补充材料|当事路径选择|不再只是象征|进入了生活的细部/.test(cleanText);
-
-  if (!cleanText || tooShort || tooRepeated || templated) {
-    return buildContinuityFallbackText(payload, parsed);
-  }
-
-  if (selected && !cleanText.includes(selected.slice(0, Math.min(8, selected.length))) && !cleanText.includes(extractIdeaAnchor(selected))) {
-    return `${buildChoiceConsequenceSentence(payload, parsed)}\n\n${cleanText}`;
-  }
-
-  return cleanText;
-}
-
-function buildContinuityFallbackText(payload, parsed) {
-  const cards = payload.cards || {};
-  const unit = normalizeTextGenerationUnit(cards.text_generation_unit || parsed.text_generation_unit, payload, parsed);
-  const form = unit.form.primary || cards.form || "";
-  const selected = String(payload.selectedChoice || "继续").replace(/^自定义[:：]/, "").trim();
-  const anchor = extractCurrentAnchor(payload, parsed);
-  const ideaAnchor = extractIdeaAnchor(payload.idea);
-  const state = payload.storyState || {};
-  const unresolved = Array.isArray(state.unresolved) && state.unresolved.length
-    ? state.unresolved.at(-1)
-    : unit.genre.core_conflict;
-  const object = Array.isArray(state.objects) && state.objects.length ? state.objects.at(-1) : anchor;
-
-  if (/档案|纪实|报告|记录/.test(form)) {
-    return `续档 ${String(payload.turn || 0).padStart(2, "0")}：路径选择“${selected}”没有开启新场景，而是改变了上一份材料的阅读顺序。\n\n${object}被重新标在页眉处，和“${ideaAnchor}”之间出现一条细线。记录员暂时无法证明它们同源，只能补上一条观察：${unresolved}并未消失，而是开始要求当事人给出更具体的时间、地点和责任。`;
-  }
-
-  if (/软件|系统|聊天|对话/.test(form)) {
-    return `[INPUT]\n${selected}\n\n[MEMORY_DIFF]\nanchor=${object}\nissue=${unresolved}\n\n[RENDER]\n上一轮缓存没有被丢弃。系统把“${ideaAnchor}”拆成三项：未完成、未发送、未解释。新的文本从第三项开始，因为它最像一处故障，也最像用户真正没有说完的地方。`;
-  }
-
-  if (/日记|备忘|草稿|清单/.test(form)) {
-    return `我把“${selected}”写在上一页下面，没有另起一页。\n\n这很重要，因为${object}还在那里。它旁边多了一个没有勾选的方框，方框后面写着：${unresolved}。我忽然明白，这条路并不是让我逃离“${ideaAnchor}”，而是逼我看见它怎样把工作、话语和时机拧在一起。`;
-  }
-
-  if (/现代诗|诗/.test(form)) {
-    return `${selected}\n没有把路换掉\n\n${object}\n仍压在上一行\n\n${unresolved}\n从纸背透出来\n像一个没有勾选的空格`;
-  }
-
-  return `${buildChoiceConsequenceSentence(payload, parsed)}\n\n${object}没有离开原来的位置，只是多了一层更具体的重量：${unresolved}。故事因此继续沿着同一条裂缝往下走，工作、关系、时机或记忆中的某一项被轻轻拨动，下一处岔路必须回应这个拨动，而不是重新开始。`;
-}
-
-function buildChoiceConsequenceSentence(payload, parsed) {
-  const selected = String(payload.selectedChoice || "这个选择").replace(/^自定义[:：]/, "").trim();
-  const anchor = extractCurrentAnchor(payload, parsed);
-  return `“${selected}”先改变了${anchor}的解释顺序。`;
+  return paragraphs.length ? paragraphs.join("\n\n") : cleanText;
 }
 
 function normalizeComparableText(value) {
@@ -897,6 +840,10 @@ function repairChoices(choices, payload, parsed, stage) {
     if (genericPatterns.some((pattern) => pattern.test(label))) continue;
     if (result.some((existing) => areTooSimilar(existing.normalized, normalized))) continue;
     result.push({ raw: choice, normalized });
+  }
+
+  if (result.length) {
+    return result.map((item) => item.raw).slice(0, 4);
   }
 
   const desiredCount = stage === "story_opening" ? 3 : 3;

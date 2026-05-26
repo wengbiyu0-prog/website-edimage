@@ -2721,8 +2721,7 @@
         })
         .slice(0, 4);
 
-      const repaired = mergeDynamicChoices(normalizedChoices, makeChoices()).slice(0, 4);
-      return repaired.length ? repaired : makeChoices();
+      return normalizedChoices.length ? normalizedChoices : makeChoices();
     }
 
     function mergeDynamicChoices(primary, fallback) {
