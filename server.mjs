@@ -6,8 +6,12 @@ import { extname, join, relative, resolve, sep } from "node:path";
 const root = resolve(process.cwd());
 const env = loadEnv();
 const port = Number(env.PORT || 3000);
-const apiKey = env.OPENROUTER_API_KEY;
-const model = env.OPENROUTER_MODEL || "deepseek/deepseek-chat";
+const aiProvider = (env.AI_PROVIDER || "openrouter").trim().toLowerCase();
+const openRouterApiKey = env.OPENROUTER_API_KEY;
+const openRouterModel = env.OPENROUTER_MODEL || "deepseek/deepseek-chat";
+const wanqingApiKey = env.WQ_API_KEY || env.ANTHROPIC_AUTH_TOKEN;
+const wanqingApiUrl = (env.WQ_API_URL || "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/messages").trim();
+const wanqingModel = env.WQ_MODEL || env.ANTHROPIC_MODEL || "";
 const supabaseUrl = (env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
 const supabaseAnonKey = (env.SUPABASE_ANON_KEY || "").trim();
 const useSupabase = Boolean(supabaseUrl && supabaseAnonKey);
@@ -99,6 +103,7 @@ const server = createServer(async (req, res) => {
         app: "EDIMAGE WORLD",
         port,
         dataDir,
+        ai: getAiHealthState(),
         storage: useSupabase ? "supabase" : "local",
         supabase: health.supabase,
         inviteLimit,
@@ -131,14 +136,16 @@ const server = createServer(async (req, res) => {
 server.listen(port, "0.0.0.0", async () => {
   await ensureRuntimeFiles();
   console.log(`EDIMAGE WORLD running at http://localhost:${port}`);
-  if (!apiKey || apiKey.includes("PASTE")) {
+  if (!hasConfiguredAiProvider()) {
+    console.log(`${aiProvider} model provider is not fully configured. Add provider env vars before using real generation.`);
+  } else if (aiProvider === "openrouter" && (!openRouterApiKey || openRouterApiKey.includes("PASTE"))) {
     console.log("OPENROUTER_API_KEY is not set yet. Add it to .env before using real generation.");
   }
 });
 
 async function handleGenerate(req, res) {
-  if (!apiKey || apiKey.includes("PASTE")) {
-    sendJson(res, 500, { error: "OPENROUTER_API_KEY is missing" });
+  if (!hasConfiguredAiProvider()) {
+    sendJson(res, 500, { error: `${aiProvider} model provider is not configured` });
     return;
   }
 
@@ -146,16 +153,57 @@ async function handleGenerate(req, res) {
   const { stage, payload } = body;
   const prompt = await buildPrompt(stage, payload || {});
 
+  try {
+    const content = await generateModelContent(stage, prompt);
+    const parsed = parseJsonContent(content);
+    sendJson(res, 200, sanitizeGeneratedPayload(stage, parsed, payload || {}));
+  } catch (error) {
+    console.error(`${aiProvider} generation error:`, sanitizePublicError(error));
+    sendJson(res, 500, { error: sanitizePublicError(error) || "Model request failed" });
+  }
+}
+
+function hasConfiguredAiProvider() {
+  if (aiProvider === "wanqing") return Boolean(wanqingApiKey && wanqingModel && wanqingApiUrl);
+  return Boolean(openRouterApiKey && !openRouterApiKey.includes("PASTE"));
+}
+
+function getAiHealthState() {
+  if (aiProvider === "wanqing") {
+    return {
+      provider: "wanqing",
+      configured: hasConfiguredAiProvider(),
+      model: wanqingModel || null,
+      url: wanqingApiUrl ? wanqingApiUrl.replace(/\/+$/, "") : null
+    };
+  }
+
+  return {
+    provider: "openrouter",
+    configured: hasConfiguredAiProvider(),
+    model: openRouterModel
+  };
+}
+
+async function generateModelContent(stage, prompt) {
+  if (aiProvider === "wanqing") {
+    return generateWanqingContent(stage, prompt);
+  }
+
+  return generateOpenRouterContent(stage, prompt);
+}
+
+async function generateOpenRouterContent(stage, prompt) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${apiKey}`,
+      "Authorization": `Bearer ${openRouterApiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": appBaseUrl,
       "X-OpenRouter-Title": "EDIMAGE WORLD"
     },
     body: JSON.stringify({
-      model,
+      model: openRouterModel,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt }
@@ -172,13 +220,46 @@ async function handleGenerate(req, res) {
 
   if (!response.ok) {
     console.error("OpenRouter error:", data);
-    sendJson(res, response.status, { error: data.error?.message || "OpenRouter request failed" });
-    return;
+    throw new Error(data.error?.message || "OpenRouter request failed");
   }
 
-  const content = data.choices?.[0]?.message?.content;
-  const parsed = parseJsonContent(content);
-  sendJson(res, 200, sanitizeGeneratedPayload(stage, parsed, payload || {}));
+  return data.choices?.[0]?.message?.content;
+}
+
+async function generateWanqingContent(stage, prompt) {
+  const response = await fetch(wanqingApiUrl, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${wanqingApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: wanqingModel,
+      system: systemPrompt,
+      max_tokens: stage === "finalize" ? 1800 : 1100,
+      temperature: 0.94,
+      messages: [
+        { role: "user", content: prompt }
+      ]
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    console.error("Wanqing error:", data);
+    throw new Error(data.error?.message || data.message || "Wanqing request failed");
+  }
+
+  if (typeof data.content === "string") return data.content;
+  if (Array.isArray(data.content)) {
+    return data.content
+      .map((item) => typeof item === "string" ? item : item?.text || "")
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return data.choices?.[0]?.message?.content || data.output_text || data.text;
 }
 
 async function handleKnowledge(req, res) {

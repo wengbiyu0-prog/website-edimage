@@ -19,7 +19,15 @@ services:
         sync: false
       - key: INVITE_LIMIT
         value: 10
+      - key: AI_PROVIDER
+        value: openrouter
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_MODEL
         value: deepseek/deepseek-chat
+      - key: WQ_API_KEY
+        sync: false
+      - key: WQ_API_URL
+        value: https://wanqing-api.corp.kuaishou.com/api/gateway/v1/messages
+      - key: WQ_MODEL
+        value: ep-wfpjn4-1780498128522912254
