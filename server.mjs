@@ -1566,7 +1566,18 @@ async function writeAccessStateSupabase(state) {
 async function serveStatic(req, res) {
   const url = new URL(req.url, `http://localhost:${port}`);
   const pathname = decodeURIComponent(url.pathname);
-  const requested = pathname === "/" ? "index.html" : pathname.slice(1);
+
+  if (pathname === "/mio") {
+    res.writeHead(308, { Location: "/mio/" });
+    res.end();
+    return;
+  }
+
+  const requested = pathname === "/"
+    ? "index.html"
+    : pathname === "/mio/"
+      ? "mio/index.html"
+      : pathname.slice(1);
 
   if (!isPublicAsset(requested)) {
     res.writeHead(404);
@@ -1603,6 +1614,10 @@ async function serveStatic(req, res) {
 }
 
 function isPublicAsset(requested) {
+  if (requested.startsWith("mio/")) {
+    return [".html", ".css", ".js", ".json", ".md"].includes(extname(requested).toLowerCase());
+  }
+
   return (
     requested === "index.html" ||
     requested === "memory.html" ||

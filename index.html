@@ -341,7 +341,7 @@
     .home-shell {
       position: relative;
       isolation: isolate;
-      width: min(940px, 100%);
+      width: min(1120px, 100%);
       margin-top: clamp(74px, 14vh, 150px);
       text-align: center;
     }
@@ -441,7 +441,7 @@
     .theme-selector {
       position: relative;
       z-index: 2;
-      width: min(900px, 100%);
+      width: min(1080px, 100%);
       margin: 30px auto 0;
       text-align: left;
     }
@@ -470,7 +470,7 @@
 
     .theme-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 14px;
     }
 
@@ -549,6 +549,51 @@
         linear-gradient(rgba(65, 6, 0, 0.08), rgba(65, 6, 0, 0.32)),
         url("pic/skin-redcanyon.jpeg") center / cover,
         #8f1d0e;
+    }
+
+    .mio-entry {
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+    }
+
+    .mio-entry::after {
+      position: absolute;
+      right: 14px;
+      bottom: 12px;
+      content: "ENTER ↗";
+      color: rgba(234, 255, 249, 0.52);
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+    }
+
+    .mio-preview {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(rgba(0, 14, 12, 0.08), rgba(0, 9, 8, 0.26)),
+        url("pic/mio-entry.jpeg") center 52% / cover no-repeat,
+        #06100e;
+      filter: contrast(1.04) saturate(0.78);
+      box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.26);
+    }
+
+    .mio-preview::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      border-radius: inherit;
+      background: linear-gradient(115deg, rgba(255,255,255,0.08), transparent 38%, rgba(22, 197, 165, 0.08));
+    }
+
+    .mio-entry strong::before {
+      content: "INDEPENDENT STORY / ";
+      color: var(--text-faint);
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
     }
 
     .theme-card strong {
@@ -1215,6 +1260,12 @@
       }
     }
 
+    @media (min-width: 921px) and (max-width: 1180px) {
+      .theme-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
     @media (max-width: 620px) {
       .vhs-frame {
         inset: 10px;
@@ -1399,6 +1450,12 @@
                 <strong>Red Canyon</strong>
                 <small>赤壁、卷轴、峡谷、旧神话、窄门与远路。</small>
               </button>
+
+              <a class="theme-card mio-entry" href="/mio/" aria-label="进入互动影游《关于澪的一切》">
+                <span class="theme-preview mio-preview" aria-hidden="true"></span>
+                <strong>关于澪的一切</strong>
+                <small>你看见的，正在发生的，未曾存在的。</small>
+              </a>
             </div>
           </section>
         </div>
@@ -1643,7 +1700,7 @@
     };
 
     const screens = [...document.querySelectorAll(".screen")];
-    const themeButtons = [...document.querySelectorAll(".theme-card")];
+    const themeButtons = [...document.querySelectorAll(".theme-card[data-theme]")];
 
     const ideaInput = document.querySelector("#ideaInput");
     const startBtn = document.querySelector("#startBtn");

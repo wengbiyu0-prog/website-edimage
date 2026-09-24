@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10100f" />
+    <title>关于澪的一切｜EDIMAGE WORLD</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+
+    <aside class="branch-monitor" id="branchMonitor" aria-label="分支观测器">
+      <button class="monitor-head" id="monitorToggle" aria-expanded="false">
+        <span class="monitor-eye" aria-hidden="true"></span>
+        <span>
+          <small>BRANCH OBSERVER</small>
+          <strong id="monitorNode">C00 · ENTRY</strong>
+        </span>
+        <i>↗</i>
+      </button>
+      <svg id="branchGraph" viewBox="0 0 280 164" role="img" aria-label="当前剧情分支图"></svg>
+      <div class="monitor-foot">
+        <span><b class="dot current"></b>当前</span>
+        <span><b class="dot visited"></b>已访问</span>
+        <span><b class="dot available"></b>可达</span>
+      </div>
+      <div class="monitor-detail" id="monitorDetail"></div>
+    </aside>
+
+    <header class="masthead">
+      <a class="wordmark" href="#" id="resetLink" aria-label="重新开始">
+        <span>早川澪档案</span>
+        <em>MIO–0</em>
+      </a>
+      <div class="session-meta">
+        <a class="edimage-return" href="/">EDIMAGE WORLD ↖</a>
+        <span id="routeLabel">未归档会话</span>
+        <span class="countdown"><i></i><b id="countdown">45:00</b> UNTIL WRITE</span>
+      </div>
+    </header>
+
+    <main class="reader" id="reader">
+      <div class="chapter-index" aria-hidden="true">
+        <span id="nodeIndex">C00</span>
+        <span class="hairline"></span>
+        <span id="progressIndex">001 / 115</span>
+      </div>
+
+      <article class="scene" id="scene" aria-live="polite">
+        <p class="eyebrow" id="sceneEyebrow">缺失层 · 夜 · 内</p>
+        <button class="reveal-control" id="revealControl" type="button">全部展开</button>
+        <h1 id="sceneTitle">载入档案</h1>
+        <div class="scene-body" id="sceneBody">
+          <p>正在读取 MIO–0。</p>
+        </div>
+      </article>
+
+      <nav class="choices" id="choices" aria-label="剧情选择"></nav>
+
+      <footer class="reader-foot">
+        <button id="historyToggle" class="text-button">访问记录 <span id="historyCount">00</span></button>
+        <p>所有判断仅对本次会话生效。</p>
+      </footer>
+    </main>
+
+    <section class="history-panel" id="historyPanel" aria-hidden="true">
+      <div class="history-head">
+        <p>ACCESS LOG / 本次访问记录</p>
+        <button id="historyClose" aria-label="关闭访问记录">×</button>
+      </div>
+      <ol id="historyList"></ol>
+    </section>
+
+    <section class="exit-screen" id="exitScreen" aria-hidden="true">
+      <p>SESSION CLOSED</p>
+      <h2>你已经离开。</h2>
+      <div>
+        <button data-exit-action="resume">恢复体验</button>
+        <button data-exit-action="log">查看退出日志</button>
+      </div>
+    </section>
+
+    <noscript>本原型需要 JavaScript 才能运行。</noscript>
+    <script type="module" src="./app-v04.js"></script>
+  </body>
+</html>
