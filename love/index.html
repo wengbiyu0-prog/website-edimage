@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#d8d2c8" />
+    <meta name="description" content="《爱情万岁》互动影游：十次关系模拟，一次不可代替的决定。" />
+    <title>爱情万岁｜EDIMAGE WORLD</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="rain" aria-hidden="true"></div>
+    <div class="glass" aria-hidden="true"></div>
+
+    <aside class="experiment-map" id="experimentMap" aria-label="实验进程">
+      <button class="map-head" id="mapToggle" type="button" aria-expanded="false">
+        <span class="map-pulse" aria-hidden="true"></span>
+        <span><small>RELATIONSHIP TEST</small><strong id="mapTitle">会话 100</strong></span>
+        <i>＋</i>
+      </button>
+      <ol id="mapList" class="map-list"></ol>
+      <div class="map-detail" id="mapDetail"></div>
+    </aside>
+
+    <header class="masthead">
+      <button class="case-mark" id="resetButton" type="button" aria-label="重新开始">
+        <span>市民关系调解中心</span>
+        <strong>CASE 2049–0711</strong>
+      </button>
+      <div class="session-meta">
+        <a href="/">EDIMAGE WORLD ↖</a>
+        <span id="sessionLabel">离婚评估 · 待处理</span>
+        <span><b id="clock">21:40</b> / MEMORY WIPE</span>
+      </div>
+    </header>
+
+    <main class="reader">
+      <div class="rail" aria-hidden="true">
+        <span id="nodeCode">P01</span>
+        <i></i>
+        <span id="roundCode">ENTRY</span>
+      </div>
+
+      <article class="scene" id="scene" aria-live="polite">
+        <div class="scene-kicker"><span id="location">调解中心 · 夜 · 内</span><button id="revealAll" type="button">全部展开</button></div>
+        <h1 id="title">载入申请</h1>
+        <div class="scene-body" id="body"></div>
+      </article>
+
+      <nav class="choices" id="choices" aria-label="可执行操作"></nav>
+
+      <footer class="reader-foot">
+        <button id="logButton" type="button">访问记录 <span id="logCount">00</span></button>
+        <p>你的操作改变证据与记忆，不替当事人选择爱。</p>
+      </footer>
+    </main>
+
+    <section class="log-panel" id="logPanel" aria-hidden="true">
+      <div class="log-head"><p>SESSION 100 / ACCESS LOG</p><button id="logClose" type="button" aria-label="关闭">×</button></div>
+      <ol id="logList"></ol>
+    </section>
+
+    <dialog id="resetDialog">
+      <form method="dialog">
+        <p class="dialog-code">RESET SESSION 100</p>
+        <h2>清除本次访问记录？</h2>
+        <p>这只会重置浏览器中的本次体验，不会替故事中的人物清除记忆。</p>
+        <div><button value="cancel">保留</button><button value="confirm">重新开始</button></div>
+      </form>
+    </dialog>
+
+    <noscript>本互动影游需要 JavaScript 才能运行。</noscript>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

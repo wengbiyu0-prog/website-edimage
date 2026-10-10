@@ -596,6 +596,70 @@
       letter-spacing: 0.1em;
     }
 
+    .love-entry {
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+    }
+
+    .love-entry::after {
+      position: absolute;
+      right: 14px;
+      bottom: 12px;
+      content: "SESSION 100 ↗";
+      color: rgba(28, 35, 37, 0.56);
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+    }
+
+    .love-preview {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(101deg, transparent 0 12%, rgba(255,255,255,.4) 12.5%, transparent 13% 34%, rgba(255,255,255,.3) 34.5%, transparent 35%),
+        radial-gradient(circle at 67% 36%, rgba(177, 54, 44, .76) 0 2px, transparent 3px),
+        linear-gradient(112deg, rgba(229,225,216,.96), rgba(115,133,136,.82));
+      filter: saturate(.72);
+      box-shadow: inset 0 0 28px rgba(31, 42, 44, .18);
+    }
+
+    .love-preview::before {
+      position: absolute;
+      width: 54%;
+      height: 36%;
+      left: 23%;
+      top: 31%;
+      content: "2049–0711\A LOVE WINS";
+      white-space: pre;
+      padding: 12px;
+      border: 1px solid rgba(29,36,38,.28);
+      color: rgba(29,36,38,.72);
+      background: rgba(236,232,222,.72);
+      font-family: var(--mono);
+      font-size: .58rem;
+      line-height: 2;
+      letter-spacing: .12em;
+      transform: rotate(-3deg);
+      box-shadow: 0 12px 22px rgba(31,42,44,.14);
+    }
+
+    .love-preview::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: repeating-linear-gradient(102deg, transparent 0 19px, rgba(255,255,255,.26) 20px, transparent 21px 48px);
+    }
+
+    .love-entry strong::before {
+      content: "INTERACTIVE FILM / ";
+      color: var(--text-faint);
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+    }
+
     .theme-card strong {
       display: block;
       margin-bottom: 5px;
@@ -1455,6 +1519,12 @@
                 <span class="theme-preview mio-preview" aria-hidden="true"></span>
                 <strong>关于澪的一切</strong>
                 <small>你看见的，正在发生的，未曾存在的。</small>
+              </a>
+
+              <a class="theme-card love-entry" href="/love/" aria-label="进入互动影游《爱情万岁》">
+                <span class="theme-preview love-preview" aria-hidden="true"></span>
+                <strong>爱情万岁</strong>
+                <small>十次模拟，一次无法替代的决定。</small>
               </a>
             </div>
           </section>

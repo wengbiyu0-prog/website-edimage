@@ -1573,10 +1573,18 @@ async function serveStatic(req, res) {
     return;
   }
 
+  if (pathname === "/love") {
+    res.writeHead(308, { Location: "/love/" });
+    res.end();
+    return;
+  }
+
   const requested = pathname === "/"
     ? "index.html"
     : pathname === "/mio/"
       ? "mio/index.html"
+      : pathname === "/love/"
+        ? "love/index.html"
       : pathname.slice(1);
 
   if (!isPublicAsset(requested)) {
@@ -1615,6 +1623,10 @@ async function serveStatic(req, res) {
 
 function isPublicAsset(requested) {
   if (requested.startsWith("mio/")) {
+    return [".html", ".css", ".js", ".json", ".md"].includes(extname(requested).toLowerCase());
+  }
+
+  if (requested.startsWith("love/")) {
     return [".html", ".css", ".js", ".json", ".md"].includes(extname(requested).toLowerCase());
   }
 
