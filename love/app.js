@@ -186,8 +186,16 @@ const STORY = {
 
 const state = { current: "P01", memory: 0, trust: 0, obedience: 0, archive: 0, visited: [], log: [], evidence: new Set(), seconds: 1300 };
 const order = ["P01", "P02", "R01", "R02", "R03", "R04", "I01", "R05", "R06", "R07", "I02", "R08", "R09", "A99", "R10", "JUDGE", "UPLOAD"];
+const branchNodes = {
+  P01:[30,60], P02:[90,60], R01:[150,60], R02:[210,60], R03:[270,60], R04:[330,60], I01:[390,60], R05:[450,60], R06:[510,60], R07:[570,60], I02:[630,60],
+  R08:[570,145], R09:[500,145], A99:[500,235], R10:[410,145], JUDGE:[305,120], UPLOAD:[305,210], E1:[210,105], E2:[210,155], E3:[210,205], E4:[210,255]
+};
+const branchEdges = [
+  ["P01","P02"], ["P02","R01"], ["R01","R02"], ["R02","R03"], ["R03","R04"], ["R04","I01"], ["I01","R05"], ["R05","R06"], ["R06","R07"], ["R07","I02"], ["I02","R08"], ["R08","R09"],
+  ["R09","A99"], ["R09","R10"], ["A99","R10"], ["R10","JUDGE"], ["R10","UPLOAD"], ["R10","E2"], ["JUDGE","E1"], ["JUDGE","E2"], ["JUDGE","E3"], ["UPLOAD","E2"], ["UPLOAD","E4"]
+];
 const $ = (q) => document.querySelector(q);
-const dom = { body: $("#body"), title: $("#title"), location: $("#location"), choices: $("#choices"), node: $("#nodeCode"), round: $("#roundCode"), label: $("#sessionLabel"), clock: $("#clock"), map: $("#experimentMap"), mapList: $("#mapList"), mapTitle: $("#mapTitle"), mapDetail: $("#mapDetail"), logPanel: $("#logPanel"), logList: $("#logList"), logCount: $("#logCount"), reveal: $("#revealAll"), dialog: $("#resetDialog") };
+const dom = { body: $("#body"), title: $("#title"), location: $("#location"), choices: $("#choices"), node: $("#nodeCode"), round: $("#roundCode"), label: $("#sessionLabel"), clock: $("#clock"), atlas: $("#branchAtlas"), branchGraph: $("#branchGraph"), map: $("#experimentMap"), mapList: $("#mapList"), mapTitle: $("#mapTitle"), mapDetail: $("#mapDetail"), logPanel: $("#logPanel"), logList: $("#logList"), logCount: $("#logCount"), reveal: $("#revealAll"), dialog: $("#resetDialog") };
 let timers = [];
 
 function esc(s) { return String(s).replace(/[&<>\"]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[x]); }
@@ -238,6 +246,23 @@ function revealLines() {
 }
 function finishReveal() { timers.forEach(clearTimeout); timers = []; dom.body.querySelectorAll(".line").forEach((x) => x.classList.add("shown")); dom.choices.classList.remove("locked"); dom.reveal.disabled = true; dom.reveal.textContent = "本场已展开"; }
 
+function renderBranchGraph() {
+  const visited = new Set([...state.visited, state.current]);
+  const travelled = new Set(state.log.map(({ from, to }) => `${from}>${to}`));
+  const possible = new Set(branchEdges.filter(([from]) => from === state.current).map(([from, to]) => `${from}>${to}`));
+  const edgeMarkup = branchEdges.map(([from, to]) => {
+    const [x1,y1] = branchNodes[from]; const [x2,y2] = branchNodes[to]; const mid = (x1 + x2) / 2;
+    const status = travelled.has(`${from}>${to}`) ? "active" : possible.has(`${from}>${to}`) ? "available" : "";
+    return `<path class="branch-edge ${status}" d="M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}"/>`;
+  }).join("");
+  const nodeMarkup = Object.entries(branchNodes).map(([id,[x,y]]) => {
+    const classes = ["branch-node", visited.has(id) ? "visited" : "", state.current === id ? "current" : "", ["A99","JUDGE","UPLOAD"].includes(id) ? "conditional" : "", /^E/.test(id) ? "ending" : ""].filter(Boolean).join(" ");
+    const title = STORY[id]?.title || id;
+    return `<g class="${classes}" transform="translate(${x} ${y})"><title>${esc(id)} · ${esc(title)}</title><circle r="11"></circle><text y=".5">${esc(id.replace("JUDGE","J").replace("UPLOAD","U"))}</text></g>`;
+  }).join("");
+  dom.branchGraph.innerHTML = edgeMarkup + nodeMarkup;
+}
+
 function renderMap() {
   const currentIndex = order.indexOf(state.current);
   dom.mapList.innerHTML = Array.from({ length: 10 }, (_, i) => {
@@ -246,6 +271,7 @@ function renderMap() {
   }).join("");
   dom.mapTitle.textContent = STORY[state.current].ending ? STORY[state.current].title : `${STORY[state.current].round} · 会话 100`;
   dom.mapDetail.innerHTML = `<p>当前节点 <b>${state.current}</b> · 已访问 ${new Set([...state.visited, state.current]).size}</p><p>可验证证据 ${state.evidence.size} 项</p>${currentIndex < 0 ? "" : `<div class="progress"><i style="width:${Math.max(4, currentIndex / (order.length - 1) * 100)}%"></i></div>`}`;
+  renderBranchGraph();
 }
 
 function renderLog() { dom.logCount.textContent = String(state.log.length).padStart(2, "0"); dom.logList.innerHTML = state.log.map((x) => `<li><b>${esc(x.from)} → ${esc(x.to)}</b><span>${esc(x.label)}</span></li>`).join("") || "<li><span>尚无操作记录。</span></li>"; }
@@ -255,6 +281,7 @@ function confirmReset() { dom.dialog.showModal(); }
 function reset() { localStorage.removeItem("love-wins-session-v1"); Object.assign(state, { current: "P01", memory: 0, trust: 0, obedience: 0, archive: 0, visited: [], log: [], evidence: new Set(), seconds: 1300 }); render(); }
 
 dom.reveal.onclick = finishReveal;
+$("#atlasToggle").onclick = () => { const open = dom.atlas.classList.toggle("expanded"); $("#atlasToggle").setAttribute("aria-expanded", String(open)); };
 $("#mapToggle").onclick = () => { const open = dom.map.classList.toggle("expanded"); $("#mapToggle").setAttribute("aria-expanded", String(open)); };
 $("#logButton").onclick = () => { dom.logPanel.classList.add("open"); dom.logPanel.setAttribute("aria-hidden", "false"); };
 $("#logClose").onclick = () => { dom.logPanel.classList.remove("open"); dom.logPanel.setAttribute("aria-hidden", "true"); };

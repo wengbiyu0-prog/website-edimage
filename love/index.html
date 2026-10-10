@@ -12,6 +12,17 @@
     <div class="rain" aria-hidden="true"></div>
     <div class="glass" aria-hidden="true"></div>
 
+    <aside class="branch-atlas" id="branchAtlas" aria-label="分支架构缩览图">
+      <button class="atlas-head" id="atlasToggle" type="button" aria-expanded="false">
+        <span><small>BRANCH ARCHITECTURE</small><strong>分支架构缩览</strong></span>
+        <i aria-hidden="true">↗</i>
+      </button>
+      <div class="atlas-viewport">
+        <svg id="branchGraph" viewBox="0 0 660 300" role="img" aria-label="从申请、十次实验到四个结局的分支结构"></svg>
+      </div>
+      <div class="atlas-foot"><span><i class="atlas-dot current"></i>当前</span><span><i class="atlas-line active"></i>已访问</span><span><i class="atlas-dot locked"></i>条件节点</span></div>
+    </aside>
+
     <aside class="experiment-map" id="experimentMap" aria-label="实验进程">
       <button class="map-head" id="mapToggle" type="button" aria-expanded="false">
         <span class="map-pulse" aria-hidden="true"></span>
